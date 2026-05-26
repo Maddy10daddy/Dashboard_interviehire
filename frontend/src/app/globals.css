@@ -3424,6 +3424,11 @@ body.light-theme .theme-icon-sun {
   flex-grow: 1;
   overflow-y: auto;
 }
+.drawer-body form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
 
 .btn-drawer-submit {
   width: 100%;
