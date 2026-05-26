@@ -4666,7 +4666,7 @@ body.light-theme .jd-tab:not(.active):hover {
   position: absolute !important;
   pointer-events: none !important;
   z-index: 1 !important;
-  top: 4px;
+  top: 0;
   left: 0;
   transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1),
               width 0.38s cubic-bezier(0.16, 1, 0.3, 1),
