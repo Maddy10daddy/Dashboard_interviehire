@@ -1,15 +1,20 @@
 from pydantic_settings import BaseSettings
-
+ 
+ 
 class Settings(BaseSettings):
-    port: int = 8000
-    log_level: str = "info"
-    allowed_origins: str = "http://localhost:3000"
-
-    @property
-    def allowed_origins_list(self) -> list[str]:
-        return [origin.strip() for origin in self.allowed_origins.split(",") if origin.strip()]
-
+    # Database
+    DATABASE_URL: str = "postgresql://postgres:password@localhost:5432/hiring_dashboard"
+ 
+    # App
+    SECRET_KEY: str = "change-this-in-production"
+    APP_NAME: str = "Hiring Dashboard"
+ 
+    # CORS
+    FRONTEND_URL: str = "http://localhost:3000"
+ 
     class Config:
         env_file = ".env"
-
+ 
+ 
 settings = Settings()
+ 
