@@ -8,10 +8,11 @@ from app.database import get_db
 from app.models.job import Job, JobStatus
 from app.models.applicant import Applicant, ApplicantSource
 from app.models.career import JobCollaborator
-from app.models.user import User
+from app.models.user import User, UserType
 from app.schemas import (
     JobListOut, JobOut, JobDetailOut, JobSettingsIn,
-    JobPipelineCounts, CollaboratorIn, AddApplicantIn, ApplicantOut, FunnelOut, FunnelStage
+    JobPipelineCounts, CollaboratorIn, AddApplicantIn, ApplicantOut, FunnelOut, FunnelStage,
+    JobCreateIn, ApplicantUpdateIn
 )
 
 router = APIRouter()
@@ -28,7 +29,7 @@ def _build_job_out(job: Job, db: Session) -> dict:
         "created_by_name": job.created_by.name if job.created_by else None,
         "pipeline": JobPipelineCounts(
             total=len(applicants),
-            resume=None,  # fill in when resume analysis is implemented
+            resume=sum(1 for a in applicants if a.resume_analysed),  # count analysed resumes
             screening=sum(1 for a in applicants if a.screening_status is not None),
             functional=sum(1 for a in applicants if a.functional_status is not None),
         )
@@ -55,6 +56,27 @@ def list_jobs(
         draft=sum(1 for j in all_jobs if j.status == JobStatus.draft),
         archived=sum(1 for j in all_jobs if j.status == JobStatus.archived),
     )
+
+
+@router.post("", response_model=JobDetailOut)
+def create_job(data: JobCreateIn, db: Session = Depends(get_db)):
+    # Default admin user as creator if one exists
+    admin = db.query(User).filter(User.user_type == UserType.org_admin).first()
+    new_job = Job(
+        title=data.title,
+        role_name=data.role_name,
+        experience_band=data.experience_band,
+        custom_job_id=data.custom_job_id,
+        status=data.status,
+        created_by_id=admin.id if admin else None,
+        resume_analysis_enabled=data.resume_analysis_enabled,
+        recruiter_screening_enabled=data.recruiter_screening_enabled,
+        functional_interview_enabled=data.functional_interview_enabled
+    )
+    db.add(new_job)
+    db.commit()
+    db.refresh(new_job)
+    return new_job
 
 
 # ─── CREATE JOB (file upload path) ───────────────────────────────────────────
@@ -186,6 +208,18 @@ def add_applicant(job_id: UUID, data: AddApplicantIn, db: Session = Depends(get_
         raise HTTPException(status_code=404, detail="Job not found")
     applicant = Applicant(**data.model_dump(), job_id=job_id)
     db.add(applicant)
+    db.commit()
+    db.refresh(applicant)
+    return applicant
+
+
+@router.patch("/applicants/{applicant_id}", response_model=ApplicantOut)
+def update_applicant(applicant_id: UUID, data: ApplicantUpdateIn, db: Session = Depends(get_db)):
+    applicant = db.query(Applicant).filter(Applicant.id == applicant_id).first()
+    if not applicant:
+        raise HTTPException(status_code=404, detail="Applicant not found")
+    for key, value in data.model_dump(exclude_unset=True).items():
+        setattr(applicant, key, value)
     db.commit()
     db.refresh(applicant)
     return applicant

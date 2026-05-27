@@ -135,7 +135,16 @@ class JobSettingsIn(BaseModel):
     functional_interview_enabled: Optional[bool] = None
     is_job_listed: Optional[bool] = None
  
- 
+class JobCreateIn(BaseModel):
+    title: str
+    role_name: str
+    experience_band: Optional[str] = None
+    custom_job_id: Optional[str] = None
+    status: JobStatus = JobStatus.draft
+    resume_analysis_enabled: bool = True
+    recruiter_screening_enabled: bool = True
+    functional_interview_enabled: bool = True
+
 # ─── APPLICANTS / RESPONSES ──────────────────────────────────────────────────
  
 class ApplicantOut(BaseModel):
@@ -164,6 +173,16 @@ class AddApplicantIn(BaseModel):
     email: EmailStr
     phone: Optional[str] = None
     source: Optional[ApplicantSource] = None
+
+class ApplicantUpdateIn(BaseModel):
+    screening_status: Optional[InterviewStatus] = None
+    screening_score: Optional[float] = None
+    functional_status: Optional[InterviewStatus] = None
+    functional_score: Optional[float] = None
+    cheat_probability: Optional[CheatProbability] = None
+    resume_analysed: Optional[bool] = None
+    resume_shortlisted: Optional[bool] = None
+    resume_waitlisted: Optional[bool] = None
  
 class CollaboratorIn(BaseModel):
     user_id: UUID

@@ -30,9 +30,16 @@ export interface WSErrorMessage extends BaseWSMessage {
   content: string;
 }
 
+export interface WSCandidateUpdateMessage extends BaseWSMessage {
+  type: 'candidate_update';
+  content: string;
+  sender?: string;
+}
+
 export type WSMessage =
   | WSEchoMessage
   | WSBroadcastMessage
   | WSPingMessage
   | WSPongMessage
-  | WSErrorMessage;
+  | WSErrorMessage
+  | WSCandidateUpdateMessage;
