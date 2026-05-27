@@ -2,21 +2,35 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.websocket_routes import router as websocket_router
-
-app = FastAPI(title="IntervieHire Backend")
-
-# Setup CORS
+from app.database import Base, engine
+from app.routers import jobs, team, career, usage, settings as settings_router
+ 
+# Import all models so SQLAlchemy registers them before create_all
+import app.models  # noqa
+ 
+# Create all tables
+Base.metadata.create_all(bind=engine)
+ 
+app = FastAPI(title=settings.APP_NAME)
+ 
+# CORS — allows Next.js frontend to talk to this API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.allowed_origins_list,
+    allow_origins=[settings.FRONTEND_URL],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Include Routers
-app.include_router(websocket_router)
-
+ 
+# Routers
+app.include_router(websocket_router)  # existing WS routes
+app.include_router(jobs.router,             prefix="/api/jobs",     tags=["Jobs"])
+app.include_router(team.router,             prefix="/api/team",     tags=["Team"])
+app.include_router(career.router,           prefix="/api/career",   tags=["Career"])
+app.include_router(usage.router,            prefix="/api/usage",    tags=["Usage"])
+app.include_router(settings_router.router,  prefix="/api/settings", tags=["Settings"])
+ 
+ 
 @app.get("/")
-async def health_check():
-    return {"status": "ok", "message": "IntervieHire API is running"}
+def root():
+    return {"status": "ok", "app": settings.APP_NAME}
