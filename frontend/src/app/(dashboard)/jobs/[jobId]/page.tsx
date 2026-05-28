@@ -87,7 +87,7 @@ export default function JobDetailPage() {
         </div>
         <div className="jd-actions">
           <button className="btn-jd-ghost" onClick={() => router.push('/jobs')}>← Back to Jobs</button>
-          <button className="btn-jd-primary">+ Add Applicants</button>
+          <button className="btn-jd-primary" onClick={() => router.push(`/jobs/${job.id}/sourcing`)}>+ Add Applicants</button>
         </div>
       </div>
 

@@ -103,9 +103,9 @@ export default function JobsPage() {
             </div>
           ) : (
             filteredJobs.map(job => {
-              const resumeVal = !job.pipeline.resume ? '-' : job.pipeline.resume;
-              const screeningVal = !job.pipeline.screening ? '-' : job.pipeline.screening;
-              const functionalVal = !job.pipeline.functional ? '-' : job.pipeline.functional;
+              const resumeVal = job.pipeline.resume;
+              const screeningVal = job.pipeline.screening;
+              const functionalVal = job.pipeline.functional;
 
               return (
                 <div

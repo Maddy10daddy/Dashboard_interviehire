@@ -21,6 +21,11 @@ export function useWebSocket({
   const reconnectTimer = useRef<NodeJS.Timeout>();
   const pingTimer = useRef<NodeJS.Timeout>();
 
+  const onMessageRef = useRef(onMessage);
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  }, [onMessage]);
+
   const connect = useCallback(() => {
     try {
       setStatus('CONNECTING');
@@ -44,7 +49,7 @@ export function useWebSocket({
           
           if (data.type !== 'pong') {
             setMessages((prev) => [...prev, data]);
-            if (onMessage) onMessage(data);
+            if (onMessageRef.current) onMessageRef.current(data);
           }
         } catch (err) {
           console.error('Failed to parse WS message', err);
@@ -76,7 +81,7 @@ export function useWebSocket({
     } catch (err) {
       console.error('Failed to connect WebSocket:', err);
     }
-  }, [url, onMessage, reconnectInterval, maxReconnectInterval]);
+  }, [url, reconnectInterval, maxReconnectInterval]);
 
   useEffect(() => {
     connect();

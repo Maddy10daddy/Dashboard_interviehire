@@ -1,9 +1,10 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
-import { Search, Moon, Sun } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Search, Moon, Sun, Sparkles } from 'lucide-react';
 import { useAppContext } from '@/context/AppContext';
 import { useState, useEffect } from 'react';
+import { soundEngine } from '@/components/SoundEngine';
 
 // Route → header config mapping
 const HEADER_CONFIG: Record<string, {
@@ -58,6 +59,7 @@ const HEADER_CONFIG: Record<string, {
 
 export default function DashboardHeader() {
   const pathname = usePathname();
+  const router = useRouter();
   const { globalSearch, setGlobalSearch, openDrawer } = useAppContext();
   const [isLight, setIsLight] = useState(false);
 
@@ -75,6 +77,24 @@ export default function DashboardHeader() {
     setIsLight(next);
     document.body.classList.toggle('light-theme', next);
     localStorage.setItem('interviehire-theme', next ? 'light' : 'dark');
+  };
+
+  const [isCrystal, setIsCrystal] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('interviehire-crystal');
+    if (saved === 'true') {
+      document.body.classList.add('liquid-crystal-theme');
+      setIsCrystal(true);
+    }
+  }, []);
+
+  const toggleCrystal = () => {
+    const next = !isCrystal;
+    setIsCrystal(next);
+    document.body.classList.toggle('liquid-crystal-theme', next);
+    localStorage.setItem('interviehire-crystal', next ? 'true' : 'false');
+    soundEngine.playChime([261.63, 329.63, 392.00, 523.25], 0.15, 0.08);
   };
 
   // Find matching config (handle dynamic routes like /jobs/[id])
@@ -132,6 +152,7 @@ export default function DashboardHeader() {
           className="btn-theme-toggle"
           id="btn-theme-toggle"
           aria-label="Toggle Theme"
+          style={{ marginRight: '8px' }}
           onClick={toggleTheme}
         >
           {isLight ? (
@@ -141,12 +162,27 @@ export default function DashboardHeader() {
           )}
         </button>
 
+        {/* Liquid Crystal Toggle */}
+        <button
+          className="btn-theme-toggle"
+          style={{
+            borderColor: isCrystal ? 'rgba(0, 245, 255, 0.4)' : 'rgba(255, 255, 255, 0.08)',
+            color: isCrystal ? '#00f5ff' : 'var(--color-text-normal)',
+            marginRight: '8px',
+            textShadow: isCrystal ? '0 0 8px rgba(0, 245, 255, 0.6)' : 'none',
+          }}
+          title="Toggle Liquid Crystal Theme"
+          onClick={toggleCrystal}
+        >
+          <Sparkles size={16} style={{ transform: isCrystal ? 'rotate(15deg)' : 'none' }} />
+        </button>
+
         {/* Contextual action button */}
         {config.actionLabel && (
           <button
             className="btn-action"
             id="header-action-btn"
-            onClick={() => openDrawer(config.actionType ?? 'job')}
+            onClick={() => config.actionType === 'job' ? router.push('/jobs/create') : openDrawer(config.actionType ?? 'job')}
           >
             <span className="btn-icon">+</span>
             <span id="header-action-btn-text">{config.actionLabel}</span>

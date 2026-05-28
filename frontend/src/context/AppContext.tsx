@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { WSMessage } from '@/types/websocket';
 import { soundEngine } from '@/components/SoundEngine';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -29,6 +30,7 @@ export interface Candidate {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   jobApplied: string;
   status: 'Resume' | 'Screening' | 'Functional' | 'Hired';
   score: string;
@@ -82,6 +84,8 @@ interface AppContextType {
   addTeamMember: (member: TeamMember) => Promise<void>;
   removeTeamMember: (email: string) => Promise<void>;
   addApplicant: (jobId: string, applicant: Omit<Candidate, 'id' | 'jobApplied' | 'score' | 'registeredOn'>) => Promise<void>;
+  addApplicantsBulk: (jobId: string, applicants: Omit<Candidate, 'id' | 'jobApplied' | 'score' | 'registeredOn'>[]) => Promise<void>;
+  uploadResumes: (jobId: string, files: File[]) => Promise<void>;
   advanceCandidate: (candidateId: string) => Promise<void>;
   recalculateJobPipelines: () => void;
   wsNotification: string | null;
@@ -145,6 +149,7 @@ const mapBackendCandidate = (c: any, jobsList: Job[]): Candidate => {
     id: c.id,
     name: c.name,
     email: c.email,
+    phone: c.phone || undefined,
     jobApplied: jobName,
     status,
     score: scoreVal,
@@ -226,18 +231,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // WebSocket connection & candidate update listener
   const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws';
+  const handleWSMessage = useCallback((message: WSMessage) => {
+    if (message.type === 'candidate_update') {
+      soundEngine.playChime([329.63, 440.00, 523.25], 0.2, 0.08);
+      setWsNotification(message.content);
+      fetchData();
+      setTimeout(() => {
+        setWsNotification(null);
+      }, 5000);
+    }
+  }, [fetchData]);
+
   useWebSocket({
     url: wsUrl,
-    onMessage: (message) => {
-      if (message.type === 'candidate_update') {
-        soundEngine.playChime([329.63, 440.00, 523.25], 0.2, 0.08);
-        setWsNotification(message.content);
-        fetchData();
-        setTimeout(() => {
-          setWsNotification(null);
-        }, 5000);
-      }
-    }
+    onMessage: handleWSMessage
   });
 
   const addJob = useCallback(async (job: Job) => {
@@ -276,6 +283,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({
           name: applicant.name,
           email: applicant.email,
+          phone: applicant.phone,
           source: source
         })
       });
@@ -312,6 +320,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
       fetchData();
     } catch (err) {
       console.error('Error adding applicant:', err);
+    }
+  }, [fetchData]);
+
+  const addApplicantsBulk = useCallback(async (jobId: string, applicants: Omit<Candidate, 'id' | 'jobApplied' | 'score' | 'registeredOn'>[]) => {
+    try {
+      const res = await fetch(`${API_URL}/api/jobs/${jobId}/applicants/bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          applicants: applicants.map(app => ({
+            name: app.name,
+            email: app.email,
+            phone: app.phone,
+            source: 'bulk_upload'
+          }))
+        })
+      });
+      if (!res.ok) throw new Error('Failed to add bulk applicants');
+      await fetchData();
+    } catch (err) {
+      console.error('Error adding bulk applicants:', err);
+    }
+  }, [fetchData]);
+
+  const uploadResumes = useCallback(async (jobId: string, files: File[]) => {
+    try {
+      const formData = new FormData();
+      files.forEach(file => {
+        formData.append('files', file);
+      });
+      const res = await fetch(`${API_URL}/api/jobs/${jobId}/applicants/upload-resumes`, {
+        method: 'POST',
+        body: formData
+      });
+      if (!res.ok) throw new Error('Failed to upload resumes');
+      await fetchData();
+    } catch (err) {
+      console.error('Error uploading resumes:', err);
     }
   }, [fetchData]);
 
@@ -394,7 +440,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         activeDrawer, openDrawer, closeDrawer,
         spotlightOpen, setSpotlightOpen,
         reportCandidateId, openReport,
-        addJob, addTeamMember, removeTeamMember, addApplicant, advanceCandidate, recalculateJobPipelines,
+        addJob, addTeamMember, removeTeamMember, addApplicant, addApplicantsBulk, uploadResumes, advanceCandidate, recalculateJobPipelines,
         wsNotification
       }}
     >
