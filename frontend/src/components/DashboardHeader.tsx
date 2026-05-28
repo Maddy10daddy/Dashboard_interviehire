@@ -83,9 +83,12 @@ export default function DashboardHeader() {
 
   useEffect(() => {
     const saved = localStorage.getItem('interviehire-crystal');
-    if (saved === 'true') {
+    if (saved !== 'false') {
       document.body.classList.add('liquid-crystal-theme');
       setIsCrystal(true);
+      if (!saved) {
+        localStorage.setItem('interviehire-crystal', 'true');
+      }
     }
   }, []);
 

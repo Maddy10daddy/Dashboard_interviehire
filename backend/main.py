@@ -10,7 +10,15 @@ import app.models  # noqa
  
 # Create all tables
 Base.metadata.create_all(bind=engine)
- 
+
+# Auto-migrate: Add parameters columns to jobs if they don't exist
+with engine.connect() as conn:
+    from sqlalchemy import text
+    conn.execute(text("ALTER TABLE jobs ADD COLUMN IF NOT EXISTS resume_parameters TEXT;"))
+    conn.execute(text("ALTER TABLE jobs ADD COLUMN IF NOT EXISTS screening_parameters TEXT;"))
+    conn.execute(text("ALTER TABLE jobs ADD COLUMN IF NOT EXISTS functional_parameters TEXT;"))
+    conn.commit()
+
 app = FastAPI(title=settings.APP_NAME)
  
 # CORS — allows Next.js frontend to talk to this API

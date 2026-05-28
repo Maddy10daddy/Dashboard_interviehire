@@ -100,7 +100,10 @@ class JobOut(BaseModel):
     created_at: datetime
     created_by_name: Optional[str]
     pipeline: JobPipelineCounts
- 
+    resume_parameters: Optional[dict] = None
+    screening_parameters: Optional[dict] = None
+    functional_parameters: Optional[dict] = None
+
     class Config:
         from_attributes = True
  
@@ -125,6 +128,9 @@ class JobDetailOut(BaseModel):
     recruiter_screening_enabled: bool
     functional_interview_enabled: bool
     created_at: datetime
+    resume_parameters: Optional[dict] = None
+    screening_parameters: Optional[dict] = None
+    functional_parameters: Optional[dict] = None
  
     class Config:
         from_attributes = True
@@ -144,6 +150,16 @@ class JobCreateIn(BaseModel):
     resume_analysis_enabled: bool = True
     recruiter_screening_enabled: bool = True
     functional_interview_enabled: bool = True
+    description: Optional[str] = None
+    resume_parameters: Optional[dict] = None
+    screening_parameters: Optional[dict] = None
+    functional_parameters: Optional[dict] = None
+
+class JobParametersIn(BaseModel):
+    resume_parameters: Optional[dict] = None
+    screening_parameters: Optional[dict] = None
+    functional_parameters: Optional[dict] = None
+
 
 # ─── APPLICANTS / RESPONSES ──────────────────────────────────────────────────
  
@@ -173,6 +189,9 @@ class AddApplicantIn(BaseModel):
     email: EmailStr
     phone: Optional[str] = None
     source: Optional[ApplicantSource] = None
+
+class BulkApplicantsIn(BaseModel):
+    applicants: List[AddApplicantIn]
 
 class ApplicantUpdateIn(BaseModel):
     screening_status: Optional[InterviewStatus] = None

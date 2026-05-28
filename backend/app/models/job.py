@@ -29,6 +29,11 @@ class Job(Base):
     job_type = Column(String, nullable=True)             # Full-Time, Part-Time etc.
     is_job_listed = Column(Boolean, default=False)       # "Job Listed" badge
 
+    # Parameters & generated questions (JSON stored as text)
+    resume_parameters = Column(Text, nullable=True)
+    screening_parameters = Column(Text, nullable=True)
+    functional_parameters = Column(Text, nullable=True)
+
     # Pipeline stage toggles
     resume_analysis_enabled = Column(Boolean, default=True)
     recruiter_screening_enabled = Column(Boolean, default=True)
