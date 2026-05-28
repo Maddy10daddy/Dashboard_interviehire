@@ -44,14 +44,7 @@ const SPOTLIGHT_COMMANDS: CommandItem[] = [
     shortcut: 'Alt+2',
     keys: 'Alt+2',
   },
-  {
-    name: 'Switch to AI Swarm Console',
-    desc: 'Open autonomous agent swarm terminal',
-    icon: Monitor,
-    action: (router) => router.push('/swarm'),
-    shortcut: 'Alt+3',
-    keys: 'Alt+3',
-  },
+
   {
     name: 'View Team Access Logs',
     desc: 'Manage team invites, roles, and security',

@@ -211,7 +211,7 @@ export default function SwarmPage() {
               <span className="dot yellow"></span>
               <span className="dot green"></span>
             </div>
-            <span className="terminal-title">A.I. Swarm Ticker Activity Feed</span>
+            <span className="terminal-title">Terminal Activity Logs</span>
           </div>
 
           <div className="terminal-body" id="swarm-terminal-body">

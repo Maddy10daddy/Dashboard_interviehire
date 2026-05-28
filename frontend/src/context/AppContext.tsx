@@ -24,6 +24,10 @@ export interface Job {
   experienceBand: string;
   createdBy: string;
   pipeline: JobPipeline;
+  description?: string;
+  resumeParameters?: any;
+  screeningParameters?: any;
+  functionalParameters?: any;
 }
 
 export interface Candidate {
@@ -81,6 +85,7 @@ interface AppContextType {
 
   // Helpers
   addJob: (job: Job) => Promise<Job | undefined>;
+  updateJobParameters: (jobId: string, params: { resumeParameters?: any, screeningParameters?: any, functionalParameters?: any }) => Promise<void>;
   addTeamMember: (member: TeamMember) => Promise<void>;
   removeTeamMember: (email: string) => Promise<void>;
   addApplicant: (jobId: string, applicant: Omit<Candidate, 'id' | 'jobApplied' | 'score' | 'registeredOn'>) => Promise<void>;
@@ -125,6 +130,10 @@ const mapBackendJob = (j: any): Job => ({
     screening: j.pipeline.screening,
     functional: j.pipeline.functional,
   },
+  description: j.description || '',
+  resumeParameters: j.resume_parameters || { must_have: [], red_flags: [], good_to_have: [] },
+  screeningParameters: j.screening_parameters || { experience: [], location: [], compensation: [] },
+  functionalParameters: j.functional_parameters || { topics: [] }
 });
 
 const mapBackendCandidate = (c: any, jobsList: Job[]): Candidate => {
@@ -260,7 +269,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
           status: job.status,
           resume_analysis_enabled: true,
           recruiter_screening_enabled: true,
-          functional_interview_enabled: true
+          functional_interview_enabled: true,
+          description: job.description,
+          resume_parameters: job.resumeParameters,
+          screening_parameters: job.screeningParameters,
+          functional_parameters: job.functionalParameters
         })
       });
       if (!res.ok) throw new Error('Failed to create job');
@@ -270,6 +283,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return mappedNewJob;
     } catch (err) {
       console.error('Error adding job:', err);
+    }
+  }, []);
+
+  const updateJobParameters = useCallback(async (jobId: string, params: { resumeParameters?: any, screeningParameters?: any, functionalParameters?: any }) => {
+    try {
+      const res = await fetch(`${API_URL}/api/jobs/${jobId}/parameters`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resume_parameters: params.resumeParameters,
+          screening_parameters: params.screeningParameters,
+          functional_parameters: params.functionalParameters
+        })
+      });
+      if (!res.ok) throw new Error('Failed to update parameters');
+      const updatedJobData = await res.json();
+      setJobs(prev => prev.map(j => {
+        if (j.id === jobId) {
+          return {
+            ...j,
+            resumeParameters: updatedJobData.resume_parameters,
+            screeningParameters: updatedJobData.screening_parameters,
+            functionalParameters: updatedJobData.functional_parameters
+          };
+        }
+        return j;
+      }));
+    } catch (err) {
+      console.error('Error updating job parameters:', err);
     }
   }, []);
 
@@ -440,7 +482,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         activeDrawer, openDrawer, closeDrawer,
         spotlightOpen, setSpotlightOpen,
         reportCandidateId, openReport,
-        addJob, addTeamMember, removeTeamMember, addApplicant, addApplicantsBulk, uploadResumes, advanceCandidate, recalculateJobPipelines,
+        addJob, updateJobParameters, addTeamMember, removeTeamMember, addApplicant, addApplicantsBulk, uploadResumes, advanceCandidate, recalculateJobPipelines,
         wsNotification
       }}
     >

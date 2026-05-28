@@ -2,7 +2,7 @@
 
 class SoundEngine {
   private ctx: AudioContext | null = null;
-  public muted = false;
+  public muted = true;
 
   private init() {
     if (this.ctx) return;

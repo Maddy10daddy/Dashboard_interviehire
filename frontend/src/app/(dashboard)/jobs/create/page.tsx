@@ -43,6 +43,19 @@ export default function CreateJobPage() {
   const [skills, setSkills] = useState('');
   const [screeningQuestions, setScreeningQuestions] = useState<string[]>([]);
   const [functionalQuestions, setFunctionalQuestions] = useState<string[]>([]);
+  const [resumeParameters, setResumeParameters] = useState<any>({
+    must_have: [],
+    red_flags: [],
+    good_to_have: []
+  });
+  const [screeningParameters, setScreeningParameters] = useState<any>({
+    experience: [],
+    location: [],
+    compensation: []
+  });
+  const [functionalParameters, setFunctionalParameters] = useState<any>({
+    topics: []
+  });
 
   // AI Prompt space
   const [aiPrompt, setAiPrompt] = useState('');
@@ -127,6 +140,9 @@ export default function CreateJobPage() {
       setSkills(data.skills);
       setScreeningQuestions(data.screening_questions || []);
       setFunctionalQuestions(data.functional_questions || []);
+      setResumeParameters(data.resume_parameters || { must_have: [], red_flags: [], good_to_have: [] });
+      setScreeningParameters(data.screening_parameters || { experience: [], location: [], compensation: [] });
+      setFunctionalParameters(data.functional_parameters || { topics: [] });
       
       // Auto-assign customJobId based on filename if blank
       if (!customJobId) {
@@ -176,6 +192,9 @@ export default function CreateJobPage() {
       setSkills(data.skills);
       setScreeningQuestions(data.screening_questions || []);
       setFunctionalQuestions(data.functional_questions || []);
+      setResumeParameters(data.resume_parameters || { must_have: [], red_flags: [], good_to_have: [] });
+      setScreeningParameters(data.screening_parameters || { experience: [], location: [], compensation: [] });
+      setFunctionalParameters(data.functional_parameters || { topics: [] });
 
       soundEngine.playChime([261.63, 329.63, 392.00, 523.25], 0.18, 0.08);
     } catch (err) {
@@ -214,7 +233,11 @@ export default function CreateJobPage() {
         resume: 0,
         screening: 0,
         functional: 0
-      }
+      },
+      description,
+      resumeParameters,
+      screeningParameters,
+      functionalParameters
     };
 
     try {

@@ -17,7 +17,6 @@ import {
 const NAV_ITEMS = [
   { href: '/jobs', label: 'Jobs', icon: Briefcase, tab: 'jobs' },
   { href: '/analytics', label: 'Usage Overview', icon: BarChart3, tab: 'analytics' },
-  { href: '/swarm', label: 'AI Swarm', icon: Monitor, tab: 'swarm' },
   { href: '/team', label: 'Team Access', icon: Users, tab: 'team' },
   { href: '/career', label: 'Career Page', icon: Globe, tab: 'career' },
 ];
