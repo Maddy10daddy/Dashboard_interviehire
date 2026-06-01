@@ -241,6 +241,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // WebSocket connection & candidate update listener
   const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws';
   const handleWSMessage = useCallback((message: WSMessage) => {
+    // Forward WebSocket event to legacy dashboard terminal via CustomEvent
+    if (typeof window !== 'undefined') {
+      const event = new CustomEvent('ws-message', { detail: message });
+      window.dispatchEvent(event);
+    }
+
     if (message.type === 'candidate_update') {
       soundEngine.playChime([329.63, 440.00, 523.25], 0.2, 0.08);
       setWsNotification(message.content);
