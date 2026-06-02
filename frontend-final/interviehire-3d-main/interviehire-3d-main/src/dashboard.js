@@ -1344,6 +1344,7 @@ function navigateToCreateJob() {
   if (pasteArea) { pasteArea.style.display = 'none'; pasteArea.value = ''; }
   if (dropzone) dropzone.classList.remove('has-file', 'drag-over');
   if (fileInput) fileInput.value = '';
+  createJobUploadedFile = null;
   createJobUploadedFileName = null;
   createJobUploadedText = null;
 
@@ -1480,6 +1481,7 @@ If you need more info, respond ONLY with this JSON (no extra text):
   }
 }
 
+let createJobUploadedFile = null;
 let createJobUploadedFileName = null;
 let createJobUploadedText = null;
 
@@ -2752,66 +2754,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (dbJob) {
-          const firstNames = ['Lucas', 'Sofia', 'Marcus', 'Chloe', 'Daniel', 'Amina'];
-          const lastNames = ['Chen', 'Silva', 'Taylor', 'Nakamura', 'Oki', 'Ali'];
-          const getRandomCandidate = () => {
-            const name = `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`;
-            return {
-              name,
-              email: `${name.toLowerCase().replace(' ', '.')}@recruit.io`,
-              phone: "+1 555-01" + Math.floor(Math.random() * 90 + 10),
-              source: "bulk_upload"
-            };
-          };
-
-          if (addResume) {
-            const cData = getRandomCandidate();
-            const created = await apiFetch(`/api/jobs/${dbJob.id}/applicants`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(cData)
-            });
-            if (created) {
-              await apiFetch(`/api/jobs/applicants/${created.id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ resume_analysed: true })
-              });
-            }
-          }
-          if (addScreening) {
-            for (let i = 0; i < 2; i++) {
-              const cData = getRandomCandidate();
-              const created = await apiFetch(`/api/jobs/${dbJob.id}/applicants`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(cData)
-              });
-              if (created) {
-                await apiFetch(`/api/jobs/applicants/${created.id}`, {
-                  method: 'PATCH',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ screening_status: 'scheduled', screening_score: 85.0 })
-                });
-              }
-            }
-          }
-          if (addFunctional) {
-            const cData = getRandomCandidate();
-            const created = await apiFetch(`/api/jobs/${dbJob.id}/applicants`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(cData)
-            });
-            if (created) {
-              await apiFetch(`/api/jobs/applicants/${created.id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ screening_status: 'completed', functional_status: 'scheduled', functional_score: 90.0 })
-              });
-            }
-          }
-
           showPremiumToast(`Successfully created job pipeline "${roleName}"`, "success");
           await loadStateFromBackend();
           closeDrawers();
@@ -3245,6 +3187,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function handleCreateJobFile(file) {
     if (!file) return;
+    createJobUploadedFile = file;
     createJobUploadedFileName = file.name;
     const preview = document.getElementById('dropzone-file-preview');
     if (preview) {
@@ -3256,6 +3199,7 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
       document.getElementById('btn-dropzone-remove')?.addEventListener('click', (e) => {
         e.stopPropagation();
+        createJobUploadedFile = null;
         createJobUploadedFileName = null;
         createJobUploadedText = null;
         preview.style.display = 'none';
@@ -3290,16 +3234,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Continue button — process file or pasted text with DeepSeek
+  // Continue button — process file or pasted text with DeepSeek and database backend
   const btnContinue = document.getElementById('btn-create-job-continue');
   if (btnContinue) {
     btnContinue.addEventListener('click', async () => {
       const pasteArea = document.getElementById('create-jd-paste');
       const pastedText = (pasteArea && pasteArea.style.display !== 'none') ? pasteArea.value.trim() : '';
-      const textToProcess = pastedText || createJobUploadedText;
-      const sourceName = createJobUploadedFileName || 'pasted text';
 
-      if (!textToProcess) {
+      let fileToUpload = createJobUploadedFile;
+      if (!fileToUpload && pastedText) {
+        fileToUpload = new File([pastedText], "job_description.txt", { type: "text/plain" });
+      }
+
+      if (!fileToUpload) {
         showPremiumToast("Upload a file or paste a job description first.", "error");
         return;
       }
@@ -3310,38 +3257,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
       soundEngine.playChime([392, 440], 0.1, 0.1);
 
-      const systemPrompt = `You are a job description parser. Extract structured job info from the provided text.
-Return ONLY valid JSON:
-{"roleName":"exact job title","cardName":"job title + brief context","experienceBand":"one of: Upto 2 Years | 1-4 Years | 3-6 Years | 5+ Years | 8+ Years","description":"clean 2-3 sentence professional job description"}`;
-
       try {
-        const response = await callDeepSeekAPI([
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Parse this job description:\n\n${textToProcess.slice(0, 2500)}` }
-        ], true);
+        const formData = new FormData();
+        formData.append('file', fileToUpload);
 
-        const parsed = JSON.parse(sanitizeJSONResponse(response));
-        const newJob = {
-          id: generateJobId(),
-          roleName: parsed.roleName,
-          cardName: parsed.cardName || parsed.roleName,
-          created: new Date().toLocaleString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }),
-          status: 'published',
-          customJobId: '-',
-          experienceBand: parsed.experienceBand || 'Upto 2 Years',
-          createdBy: 'Devasri',
-          description: parsed.description || textToProcess.slice(0, 500),
-          questions: [],
-          pipeline: { total: 0, resume: 0, screening: 0, functional: 0 }
-        };
-        AppState.jobs.unshift(newJob);
-        saveStateToLocalStorage();
-        showPremiumToast(`Job "${parsed.roleName}" created successfully.`, "success");
+        // Step 1: Call extract-jd backend endpoint
+        const data = await apiFetch('/api/jobs/extract-jd', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!data || !data.role_name) {
+          throw new Error("Failed to parse the job description.");
+        }
+
+        // Step 2: Post to /api/jobs to insert the job in the database
+        const dbJob = await apiFetch('/api/jobs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: data.card_name || data.role_name,
+            role_name: data.role_name,
+            experience_band: data.experience_band || '3-6 Years',
+            custom_job_id: '-',
+            status: 'published',
+            resume_analysis_enabled: true,
+            recruiter_screening_enabled: true,
+            functional_interview_enabled: true,
+            description: data.description || "Parsed from job description.",
+            resume_parameters: data.resume_parameters,
+            screening_parameters: data.screening_parameters,
+            functional_parameters: data.functional_parameters
+          })
+        });
+
+        if (!dbJob) {
+          throw new Error("Failed to save the job to the database.");
+        }
+
+        // Step 3: Reload backend state
+        await loadStateFromBackend();
+
+        showPremiumToast(`Job "${dbJob.role_name}" created successfully.`, "success");
         soundEngine.playChime([329.63, 392, 523.25], 0.2, 0.08);
-        navigateToJobDetail(newJob.id);
+
+        // Navigate to the newly created job
+        navigateToJobDetail(String(dbJob.id));
       } catch (err) {
         console.error("Job creation from JD failed:", err);
-        showPremiumToast("Failed to process job description. Check API status.", "error");
+        showPremiumToast("Failed to process job description: " + (err.message || "error"), "error");
         btnContinue.disabled = false;
         btnContinue.innerHTML = originalHTML;
       }

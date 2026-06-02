@@ -112,15 +112,15 @@ def extract_jd(
     import time
     
     # Validate extension
-    if not file.filename.endswith((".pdf", ".docx")):
-        raise HTTPException(status_code=400, detail="Only .pdf and .docx files are supported")
+    if not file.filename.endswith((".pdf", ".docx", ".txt")):
+        raise HTTPException(status_code=400, detail="Only .pdf, .docx, and .txt files are supported")
     
     # Save file
     file_path = f"{UPLOAD_DIR}/{file.filename}"
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
         
-    # Try to read text from file if possible (simple text extraction for pdf/docx)
+    # Try to read text from file if possible (simple text extraction for pdf/docx/txt)
     file_text = ""
     try:
         if file.filename.endswith(".pdf"):
@@ -131,6 +131,10 @@ def extract_jd(
                 import re
                 strings = re.findall(rb"[a-zA-Z0-9\s\.,;:!\?\-\'\"]{4,}", content)
                 file_text = " ".join([s.decode("ascii", errors="ignore") for s in strings[:800]])
+        elif file.filename.endswith(".txt"):
+            # Simple text file reading
+            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                file_text = f.read()[:3000]
         else:
             # Simple docx text extraction (docx is zip of xml, we can parse it simply or fallback)
             import zipfile
