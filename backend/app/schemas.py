@@ -57,9 +57,9 @@ class ChangePasswordIn(BaseModel):
     new_password: str
  
  
-# ─── CAREER PAGE ─────────────────────────────────────────────────────────────
+# ─── ORGANISATION ────────────────────────────────────────────────────────────
  
-class CareerPageOut(BaseModel):
+class OrganisationOut(BaseModel):
     id: UUID
     org_name: str
     domain: Optional[str]
@@ -72,7 +72,7 @@ class CareerPageOut(BaseModel):
     class Config:
         from_attributes = True
  
-class CareerPageIn(BaseModel):
+class OrganisationIn(BaseModel):
     org_name: str
     domain: Optional[str] = None
     contact_email: Optional[str] = None
@@ -180,6 +180,10 @@ class ApplicantOut(BaseModel):
     functional_score: Optional[float]
     cheat_probability: Optional[CheatProbability]
     report_url: Optional[str]
+
+    recruiter_screening: Optional[str]
+    recruiter_screening_score: Optional[float]
+    attempted_at: Optional[datetime]
  
     class Config:
         from_attributes = True
@@ -189,6 +193,9 @@ class AddApplicantIn(BaseModel):
     email: EmailStr
     phone: Optional[str] = None
     source: Optional[ApplicantSource] = None
+    recruiter_screening: Optional[str] = None
+    recruiter_screening_score: Optional[float] = None
+    attempted_at: Optional[datetime] = None
 
 class BulkApplicantsIn(BaseModel):
     applicants: List[AddApplicantIn]
@@ -202,6 +209,10 @@ class ApplicantUpdateIn(BaseModel):
     resume_analysed: Optional[bool] = None
     resume_shortlisted: Optional[bool] = None
     resume_waitlisted: Optional[bool] = None
+    recruiter_screening: Optional[str] = None
+    recruiter_screening_score: Optional[float] = None
+    attempted_at: Optional[datetime] = None
+    remarks: Optional[str] = None
  
 class CollaboratorIn(BaseModel):
     user_id: UUID

@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     GROK_API_KEY: str | None = None
     XAI_API_KEY: str | None = None
     GEMINI_API_KEY: str | None = None
+    DEEPSEEK_API_KEY: str | None = None
 
     class Config:
         env_file = ".env"

@@ -59,6 +59,10 @@ class Applicant(Base):
     functional_scheduled_at = Column(DateTime(timezone=True), nullable=True)
     cheat_probability = Column(Enum(CheatProbability), nullable=True)
     report_url = Column(String, nullable=True)
+    
+    recruiter_screening = Column(String, nullable=True)
+    recruiter_screening_score = Column(Float, nullable=True)
+    attempted_at = Column(DateTime(timezone=True), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

@@ -3,7 +3,7 @@ from app.database import SessionLocal, Base, engine
 from app.models.user import User, UserStatus, UserType
 from app.models.job import Job, JobStatus
 from app.models.applicant import Applicant, InterviewStatus, CheatProbability, ApplicantSource
-from app.models.career import CareerPage
+from app.models.organisation import Organisation
 from datetime import datetime
 
 def seed():
@@ -107,11 +107,11 @@ def seed():
         else:
             print("Jobs and applicants already exist.")
 
-        # Check career page
-        cp_count = db.query(CareerPage).count()
-        if cp_count == 0:
-            print("Seeding default career page settings...")
-            cp = CareerPage(
+        # Check organisation settings
+        org_count = db.query(Organisation).count()
+        if org_count == 0:
+            print("Seeding default organisation settings...")
+            org = Organisation(
                 org_name="devasri-tech",
                 domain="devasri-tech",
                 contact_email="devasri@zeko.ai",
@@ -119,10 +119,10 @@ def seed():
                 location="Remote",
                 description="Build the future of technology with us."
             )
-            db.add(cp)
+            db.add(org)
             db.commit()
         else:
-            print("Career page settings already exist.")
+            print("Organisation settings already exist.")
             
         print("Database seeding completed successfully!")
     except Exception as e:

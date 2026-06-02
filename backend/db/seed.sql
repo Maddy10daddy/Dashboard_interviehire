@@ -23,7 +23,7 @@ VALUES
 ('Sarah Jenkins', 'sarah.j@techcorp.com', 'scheduled', 'd5089c1e-920f-48d6-a241-d56e7f8a9b0c', TRUE, 'scheduled', 91.0, NULL)
 ON CONFLICT DO NOTHING;
 
--- Seed career page settings
-INSERT INTO career_pages (org_name, domain, contact_email, website_link, location, description)
+-- Seed organisation settings
+INSERT INTO organisations (org_name, domain, contact_email, website_link, location, description)
 VALUES ('devasri-tech', 'devasri-tech', 'devasri@zeko.ai', 'https://zeko.ai', 'Remote', 'Build the future of technology with us.')
 ON CONFLICT DO NOTHING;

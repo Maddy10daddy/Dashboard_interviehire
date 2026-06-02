@@ -47,3 +47,16 @@ class Job(Base):
     created_by = relationship("User", foreign_keys=[created_by_id])
     applicants = relationship("Applicant", back_populates="job")
     collaborators = relationship("JobCollaborator", back_populates="job")
+
+
+class JobCollaborator(Base):
+    __tablename__ = "job_collaborators"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    job_id = Column(UUID(as_uuid=True), ForeignKey("jobs.id"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    added_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    job = relationship("Job", back_populates="collaborators")
+    user = relationship("User")

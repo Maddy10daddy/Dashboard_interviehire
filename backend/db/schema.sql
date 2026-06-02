@@ -74,8 +74,8 @@ CREATE TABLE applicants (
 
 CREATE INDEX idx_applicants_email ON applicants(email);
 
--- Career Pages Table
-CREATE TABLE career_pages (
+-- Organisations Table
+CREATE TABLE organisations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     org_name VARCHAR NOT NULL,
     domain VARCHAR,

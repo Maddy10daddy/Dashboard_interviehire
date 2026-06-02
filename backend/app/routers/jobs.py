@@ -6,9 +6,8 @@ import shutil, os
 from sqlalchemy import func
 
 from app.database import get_db
-from app.models.job import Job, JobStatus
+from app.models.job import Job, JobStatus, JobCollaborator
 from app.models.applicant import Applicant, ApplicantSource
-from app.models.career import JobCollaborator
 from app.models.user import User, UserType
 from app.schemas import (
     JobListOut, JobOut, JobDetailOut, JobSettingsIn,
@@ -157,6 +156,7 @@ def extract_jd(
     grok_key = os.getenv("GROK_API_KEY") or os.getenv("XAI_API_KEY")
     groq_key = os.getenv("GROQ_API_KEY")
     gemini_key = os.getenv("GEMINI_API_KEY")
+    deepseek_key = os.getenv("DEEPSEEK_API_KEY")
 
     prompt_schema_instructions = f"""
 You MUST extract and output a JSON object matching this EXACT format (no other text, markdown formatting, or explanations):
@@ -219,6 +219,89 @@ You MUST extract and output a JSON object matching this EXACT format (no other t
   }}
 }}
 """
+
+    if deepseek_key:
+        import urllib.request
+        import json
+        
+        deepseek_prompt = f"""
+You are an expert AI recruiting coordinator and talent partner.
+Your task is to analyze the provided Job Description text and combine it with the USER EXTRA INSTRUCTIONS to generate a structured job description metadata object in JSON.
+
+GUIDELINES:
+1. If the USER EXTRA INSTRUCTIONS request a different role, domain, style, seniority, or completely override the job description text (for example: "okay an HR" or "make it for a Product Manager"), you MUST generate the details for that new requested role from scratch, ignoring the original Job Description text.
+2. Provide realistic and professional content for the role, card visual name, experience level, summary description, key skills (comma-separated), screening questions, and functional assessment questions suitable for the final role.
+3. Ensure the JSON is valid and fits the schema exactly.
+
+JOB DESCRIPTION TEXT:
+\"\"\"
+{file_text}
+\"\"\"
+
+USER EXTRA INSTRUCTIONS / PROMPT:
+\"\"\"
+{prompt if prompt else "None"}
+\"\"\"
+
+{prompt_schema_instructions}
+"""
+        try:
+            url = "https://api.deepseek.com/v1/chat/completions"
+            payload = {
+                "model": "deepseek-chat",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You are a professional recruiting coordinator. You must return ONLY a JSON object matching the requested schema. Do not write markdown blocks or explanations."
+                    },
+                    {
+                        "role": "user",
+                        "content": deepseek_prompt
+                    }
+                ],
+                "response_format": {"type": "json_object"}
+            }
+            
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {deepseek_key}"
+                },
+                method="POST"
+            )
+            
+            with urllib.request.urlopen(req, timeout=30) as response:
+                res_data = json.loads(response.read().decode("utf-8"))
+                text_response = res_data["choices"][0]["message"]["content"].strip()
+                ai_data = json.loads(text_response)
+                
+                return {
+                    "role_name": ai_data.get("role_name", "Senior Software Engineer"),
+                    "card_name": ai_data.get("card_name", "Full Stack Core Architect"),
+                    "experience_band": ai_data.get("experience_band", "3-6 Years"),
+                    "description": ai_data.get("description", "Software engineer description"),
+                    "skills": ai_data.get("skills", "Python, React"),
+                    "screening_questions": ai_data.get("screening_questions", []),
+                    "functional_questions": ai_data.get("functional_questions", []),
+                    "resume_parameters": ai_data.get("resume_parameters", {
+                        "must_have": [],
+                        "red_flags": [],
+                        "good_to_have": []
+                    }),
+                    "screening_parameters": ai_data.get("screening_parameters", {
+                        "experience": [],
+                        "location": [],
+                        "compensation": []
+                    }),
+                    "functional_parameters": ai_data.get("functional_parameters", {
+                        "topics": []
+                    }),
+                    "file_path": file_path
+                }
+        except Exception as err:
+            print(f"DeepSeek API failure, falling back: {err}")
 
     if groq_key:
         import urllib.request
@@ -828,6 +911,45 @@ USER EXTRA INSTRUCTIONS / PROMPT:
             ]
         }
     else:  # General
+        import re
+        guessed = ""
+        
+        # Try to parse from description text first
+        lines = [line.strip() for line in file_text.split("\n") if line.strip()]
+        for line in lines[:15]:
+            match = re.search(r'(?i)\b(job\s+title|role|position|title)\s*:\s*(.+)', line)
+            if match:
+                val = match.group(2).strip()
+                val = re.sub(r'[^\w\s\-\(\)\&]', '', val).strip()
+                if val and len(val) < 60:
+                    guessed = val
+                    break
+        
+        if not guessed:
+            # Look for We are looking/seeking a ... pattern
+            match = re.search(r'(?i)\b(looking\s+for\s+a|seeking\s+a|hiring\s+a|hiring\s+for\s+a)\s+([^.\n,]+)', file_text)
+            if match:
+                val = match.group(2).strip()
+                val = re.split(r'(?i)\b(to|who|with|at|for)\b', val)[0].strip()
+                val = re.sub(r'[^\w\s\-\(\)\&]', '', val).strip()
+                if val and len(val) < 60:
+                    guessed = val
+                    
+        if not guessed:
+            # Fall back to filename
+            guessed = file.filename
+            guessed = re.sub(r"\.[^.]+$", "", guessed)
+            guessed = re.sub(r"[_\-.]", " ", guessed)
+            guessed = re.sub(r"(?i)\b(resume|cv|jd|job description|recruitment|profile|hiring)\b", "", guessed)
+            guessed = guessed.strip()
+            
+        if guessed:
+            role_name = " ".join([w.capitalize() for w in guessed.split()])
+            card_name = role_name
+        else:
+            role_name = "Senior Software Engineer"
+            card_name = "Full Stack Core Architect"
+
         resume_parameters = {
             "must_have": [
                 "Proficiency in Python and PostgreSQL",
@@ -1201,3 +1323,35 @@ def update_applicant(applicant_id: UUID, data: ApplicantUpdateIn, db: Session = 
         pass
 
     return applicant
+
+
+@router.get("/applicants/{applicant_id}/resume-text")
+def get_applicant_resume_text(applicant_id: UUID, db: Session = Depends(get_db)):
+    applicant = db.query(Applicant).filter(Applicant.id == applicant_id).first()
+    if not applicant:
+        raise HTTPException(status_code=404, detail="Applicant not found")
+    if not applicant.resume_url or not os.path.exists(applicant.resume_url):
+        return {"text": ""}
+    
+    file_text = ""
+    try:
+        if applicant.resume_url.endswith(".pdf"):
+            with open(applicant.resume_url, "rb") as f:
+                content = f.read()
+                import re
+                strings = re.findall(rb"[a-zA-Z0-9\s\.,;:!\?\-\'\"]{4,}", content)
+                file_text = " ".join([s.decode("ascii", errors="ignore") for s in strings[:800]])
+        elif applicant.resume_url.endswith(".txt"):
+            with open(applicant.resume_url, "r", encoding="utf-8", errors="ignore") as f:
+                file_text = f.read()[:3000]
+        elif applicant.resume_url.endswith(".docx"):
+            import zipfile
+            with zipfile.ZipFile(applicant.resume_url) as z:
+                xml_content = z.read("word/document.xml")
+                import re
+                clean = re.sub(b"<[^>]*>", b"", xml_content)
+                file_text = clean.decode("utf-8", errors="ignore")[:3000]
+    except Exception as e:
+        print(f"Error reading resume file {applicant.resume_url}: {e}")
+        
+    return {"text": file_text}
