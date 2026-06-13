@@ -112,15 +112,15 @@ export function CreateJobDrawer() {
             <label>Initial Pipeline Statuses</label>
             <div className="pipeline-checkbox-list">
               <label className="pipeline-check-item">
-                <input type="checkbox" id="chk-resume" defaultChecked />
+                <input type="checkbox" id="chk-resume" />
                 <span>Resume Analysis</span>
               </label>
               <label className="pipeline-check-item">
-                <input type="checkbox" id="chk-screening" defaultChecked />
+                <input type="checkbox" id="chk-screening" />
                 <span>Recruiter Screening</span>
               </label>
               <label className="pipeline-check-item">
-                <input type="checkbox" id="chk-functional" defaultChecked />
+                <input type="checkbox" id="chk-functional" />
                 <span>Functional Interview</span>
               </label>
             </div>

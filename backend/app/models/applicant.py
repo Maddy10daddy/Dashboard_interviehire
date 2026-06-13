@@ -47,6 +47,7 @@ class Applicant(Base):
     resume_analysed = Column(Boolean, default=False)
     resume_shortlisted = Column(Boolean, default=False)
     resume_waitlisted = Column(Boolean, default=False)
+    resume_score = Column(Float, nullable=True)  # AI-generated resume match score 0-100
 
     # Recruiter Screening stage
     screening_status = Column(Enum(InterviewStatus), nullable=True)

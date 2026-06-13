@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
   /* Colors */
@@ -23,12 +23,17 @@
   --grad-purple: linear-gradient(135deg, #ff0d3f 0%, #8b0000 100%);
   
   /* Fonts */
-  --font-heading: 'Space Grotesk', -apple-system, sans-serif;
-  --font-body: 'Inter', -apple-system, sans-serif;
-  
-  /* Transition */
-  --transition-smooth: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  --transition-fast: all 0.2s ease;
+  --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+  --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+  --font-body:    'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', 'SF Mono', monospace;
+
+  /* Spring physics transitions */
+  --spring-smooth:  all 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+  --spring-fast:    all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  --spring-snappy:  all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition-smooth: var(--spring-smooth);
+  --transition-fast:   var(--spring-fast);
 }
 
 /* Reset */
@@ -44,13 +49,16 @@ html {
   background-color: var(--bg-darker);
   color: var(--text-primary);
   font-family: var(--font-body);
-  overflow-x: hidden;
+  height: 100%;
 }
 
 body {
-  min-height: 100vh;
   position: relative;
-  overflow-x: hidden;
+  height: 100%;
+  overflow: hidden;
+  color: var(--color-text-primary, var(--text-primary));
+  font-family: var(--font-body);
+  background-color: var(--color-bg, var(--bg-darker));
 }
 
 /* Background Grids and Orbs */
@@ -78,7 +86,7 @@ body {
 .scene {
   position: fixed;
   inset: 0;
-  z-index: -3;
+  z-index: 0;
   overflow: hidden;
   pointer-events: none;
   background: var(--scene-gradient-1, radial-gradient(ellipse 80% 80% at 50% -10%, rgba(0, 104, 112, 0.85), transparent)),
@@ -87,10 +95,28 @@ body {
   transition: all 0.65s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+#crystal-shader-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.scene.has-shader .orb {
+  display: none !important;
+}
+
+.scene.has-shader {
+  background: none !important;
+}
+
 .noise {
   position: fixed;
   inset: 0;
-  z-index: -2;
+  z-index: 1;
   pointer-events: none;
   opacity: 0.025;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
@@ -102,6 +128,7 @@ body {
   filter: blur(90px);
   will-change: transform, opacity;
   animation: orb-drift-crystal 22s ease-in-out infinite alternate;
+  z-index: 0;
 }
 
 .orb-1 {
@@ -1711,7 +1738,6 @@ body.cursor-hovering .cursor-follower {
    intervieHire Design System — Dashboard Styling
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
   /* Color Tokens */
@@ -3063,6 +3089,11 @@ body.light-theme .theme-icon-sun {
   background: rgba(52, 211, 153, 0.08);
   border-color: rgba(52, 211, 153, 0.2);
   color: #34d099;
+}
+.badge-role.resume {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-muted);
 }
 .badge-role-icon {
   width: 5px;
@@ -4795,211 +4826,270 @@ body.light-theme .slide-drawer {
 
 body.liquid-crystal-theme {
   /* Design System Variable Overrides for Liquid Crystal Theme */
-  --color-bg:           #02050f;
-  --color-surface:      #050c21;
-  --color-surface-2:    #091333;
-  
-  --color-gold:         #00f5ff; /* Cyan glows replacing Gold */
-  --color-gold-light:   #38bdf8;
-  --color-gold-dim:     rgba(0, 245, 255, 0.08);
-  --color-gold-glow:    rgba(0, 245, 255, 0.25);
-  
-  --color-orange:       #ff007f; /* Electric Magenta */
-  --color-pink:         #a855f7; /* Neon Purple */
+  --color-gold-rgb:         255, 255, 255;
+  --color-indigo-rgb:       59, 130, 246;
+  --color-brand-purple-rgb: 255, 255, 255;
 
-  /* Text Colors */
-  --color-text-primary: #f8fafc;
-  --color-text-muted:   #64748b;
-  --color-text-faint:   #475569;
+  /* Base — midnight slate-charcoal (neutral dark) */
+  --color-bg:               #07080a;
+  --color-surface:          rgba(255, 255, 255, 0.045);
+  --color-surface-2:        rgba(255, 255, 255, 0.025);
+  --color-surface-solid:    #0c0d12;
 
-  /* Card & Glass */
-  --color-card-bg:      rgba(8, 18, 38, 0.45);
-  --color-card-border:  rgba(0, 245, 255, 0.18);
-  --color-card-hover:   rgba(255, 0, 127, 0.35);
+  /* Primary accent — Bright White */
+  --color-gold:             #ffffff;
+  --color-gold-light:       #ffffff;
+  --color-gold-dim:         rgba(255, 255, 255, 0.10);
+  --color-gold-glow:        rgba(255, 255, 255, 0.20);
+  --color-gold-border:      rgba(255, 255, 255, 0.30);
 
-  /* Ambient Orbs — cyan/violet deep glow */
-  --orb-color-1:            #006870;
-  --orb-opacity-1:          0.30;
-  --orb-color-2:            #3c0091;
-  --orb-opacity-2:          0.22;
-  --orb-color-3:            #004f54;
-  --orb-opacity-3:          0.18;
-  --orb-color-4:            #5516be;
-  --orb-opacity-4:          0.14;
+  /* Secondary accent — Sapphire Blue */
+  --color-indigo:           oklch(64% 0.21 245);
+  --color-indigo-dim:       rgba(var(--color-indigo-rgb), 0.10);
+  --color-indigo-glow:      rgba(var(--color-indigo-rgb), 0.20);
+  --color-indigo-light:     oklch(70% 0.18 245);
+  --color-orange:           oklch(70% 0.18 40);
+  --color-pink:             oklch(70% 0.17 328);
+  --color-success:          oklch(70% 0.16 152);
+  --color-success-dim:      rgba(16, 185, 129, 0.12);
+  --color-warning:          oklch(76% 0.16 60);
+  --color-warning-dim:      rgba(245, 158, 11, 0.12);
 
-  --scene-gradient-1:       radial-gradient(ellipse 80% 80% at 50% -10%, rgba(0, 104, 112, 0.85), transparent);
-  --scene-gradient-2:       radial-gradient(ellipse 60% 60% at 80% 80%, rgba(60, 0, 145, 0.65), transparent);
+  /* Text — white with violet-blue undertone */
+  --color-text:             oklch(94% 0.008 270);
+  --color-text-primary:     oklch(94% 0.008 270);
+  --color-text-muted:       oklch(68% 0.010 270);
+  --color-text-faint:       oklch(48% 0.008 270);
+  --color-bg-dark:          #07080a;
 
-  /* Gradients */
-  --gradient-brand:     linear-gradient(135deg, #00f5ff 0%, #ff007f 50%, #a855f7 100%);
-  --gradient-gold:      linear-gradient(135deg, #00f5ff 0%, #38bdf8 50%, #00f5ff 100%);
-  --gradient-dark:      radial-gradient(circle at 30% 30%, #0c1833 0%, #02050f 100%);
+  /* Glass — white-alpha surfaces over dark bg */
+  --glass-bg:               rgba(255, 255, 255, 0.045);
+  --glass-bg-hover:         rgba(255, 255, 255, 0.065);
+  --glass-border:           rgba(255, 255, 255, 0.09);
+  --glass-border-hover:     rgba(255, 255, 255, 0.16);
+  --glass-border-gold:      rgba(var(--color-gold-rgb), 0.30);
+  --glass-shadow:           0 4px 24px rgba(0,0,0,0.55), 0 1px 2px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.08);
+  --glass-shadow-hover:     0 12px 40px rgba(0,0,0,0.65), 0 2px 8px rgba(var(--color-gold-rgb),0.14), inset 0 1px 0 rgba(255,255,255,0.13);
+  --glass-blur:             blur(32px) saturate(180%);
+  --glass-blur-heavy:       blur(44px) saturate(210%);
+
+  /* Card */
+  --color-card-bg:          var(--glass-bg);
+  --color-card-border:      var(--glass-border);
+  --color-card-hover:       var(--glass-bg-hover);
+  --color-border:           var(--glass-border);
+
+  /* Gradients — Bright White → Light Silver Grey */
+  --gradient-brand:         linear-gradient(135deg, #ffffff 0%, #e5e7eb 100%);
+  --gradient-gold:          linear-gradient(135deg, #ffffff 0%, #d1d5db 100%);
+  --gradient-orb-indigo:    transparent;
+  --gradient-orb-gold:      transparent;
+  --gradient-orb-pink:      transparent;
+
+  /* Ambient Orbs — completely transparent, removing purple background glow */
+  --orb-color-1:            transparent;
+  --orb-opacity-1:          0;
+  --orb-color-2:            transparent;
+  --orb-opacity-2:          0;
+  --orb-color-3:            transparent;
+  --orb-opacity-3:          0;
+  --orb-color-4:            transparent;
+  --orb-opacity-4:          0;
+
+  --scene-gradient-1:       none;
+  --scene-gradient-2:       none;
+
+  /* Card Glows */
+  --card-glow-indigo:       rgba(var(--color-gold-rgb), 0.14);
+  --card-glow-gold:         rgba(var(--color-indigo-rgb), 0.12);
+  --glass-glow-indigo-hover: 0 0 28px rgba(var(--color-gold-rgb), 0.20);
+  --glass-glow-gold-hover:   0 0 28px rgba(var(--color-indigo-rgb), 0.16);
 
   /* Legacy Variable Compatibility */
-  --bg-darker: #02050f;
-  --bg-dark: #050c21;
-  --bg-card: rgba(8, 18, 38, 0.45);
-  --bg-card-hover: rgba(12, 28, 59, 0.65);
-  --border-color: rgba(0, 245, 255, 0.18);
-  --border-hover: rgba(255, 0, 127, 0.45);
+  --bg-darker: #050608;
+  --bg-dark: #0d0f14;
+  --bg-card: rgba(255, 255, 255, 0.045);
+  --bg-card-hover: rgba(255, 255, 255, 0.065);
+  --border-color: rgba(255, 255, 255, 0.09);
+  --border-hover: rgba(255, 255, 255, 0.16);
   
-  --text-primary: #00f5ff;
-  --text-secondary: #00d2ff;
-  --text-muted: #628ea6;
+  --text-primary: oklch(94% 0.008 270);
+  --text-secondary: oklch(68% 0.010 270);
+  --text-muted: oklch(48% 0.008 270);
   
-  --accent-cyan: #00f5ff;
-  --accent-indigo: #ff007f;
-  --accent-purple: #a855f7;
+  --accent-cyan: #ffffff;
+  --accent-indigo: oklch(64% 0.21 245);
+  --accent-purple: #ffffff;
   
-  --grad-primary: linear-gradient(135deg, #00f5ff 0%, #ff007f 50%, #a855f7 100%);
-  --grad-text: linear-gradient(135deg, #00f5ff 0%, #ff007f 100%);
-  --grad-cyan: linear-gradient(135deg, #00f5ff 0%, #a855f7 100%);
-  --grad-purple: linear-gradient(135deg, #ff007f 0%, #4a0072 100%);
+  --grad-primary: linear-gradient(135deg, #ffffff 0%, #e5e7eb 100%);
+  --grad-text: linear-gradient(135deg, oklch(94% 0.008 270) 0%, oklch(68% 0.010 270) 100%);
+  --grad-cyan: linear-gradient(135deg, #ffffff 0%, #e5e7eb 100%);
+  --grad-purple: linear-gradient(135deg, #ffffff 0%, #07080a 100%);
 
-  background: radial-gradient(circle at 30% 30%, #0a1738 0%, #02050f 100%) !important;
+  background: #07080a !important;
 }
 
-/* Liquid crystal visual styles & overrides */
+/* ============================================================
+   LIQUID CRYSTAL — VIOLET + SAPPHIRE VISUAL OVERRIDES
+   All card/surface styles use the crystal glass aesthetic
+   ============================================================ */
+
+/* Glass card surfaces */
 body.liquid-crystal-theme .card-glass,
 body.liquid-crystal-theme .job-card,
 body.liquid-crystal-theme .card-metric,
 body.liquid-crystal-theme .table-card,
-body.liquid-crystal-theme .sidebar,
 body.liquid-crystal-theme .slide-drawer {
-  background: rgba(8, 18, 38, 0.4) !important;
-  border: 1px solid rgba(0, 245, 255, 0.22) !important;
-  box-shadow: 0 8px 32px 0 rgba(0, 245, 255, 0.08), inset 0 0 15px rgba(0, 245, 255, 0.04) !important;
-  backdrop-filter: blur(24px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: var(--glass-shadow) !important;
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
 }
 
 body.liquid-crystal-theme .job-card:hover {
-  border-color: rgba(255, 0, 127, 0.5) !important;
-  box-shadow: 0 12px 36px 0 rgba(255, 0, 127, 0.15), inset 0 0 15px rgba(255, 0, 127, 0.04) !important;
-  transform: translateY(-2px);
+  border-color: var(--glass-border-gold) !important;
+  box-shadow: var(--glass-shadow-hover), var(--glass-glow-indigo-hover) !important;
+  transform: translateY(-3px);
 }
 
+/* Sidebar uses slightly more opaque glass */
+body.liquid-crystal-theme .sidebar {
+  background: rgba(5, 5, 8, 0.96) !important;
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
+  border-right: 1px solid var(--glass-border) !important;
+  box-shadow: 1px 0 0 0 rgba(255,255,255,0.03), inset -1px 0 0 rgba(0,0,0,0.2) !important;
+}
+
+/* Active nav item uses white glass indicator */
 body.liquid-crystal-theme .sidebar-nav .nav-item.active {
-  background: rgba(0, 245, 255, 0.08) !important;
-  border-left: 3px solid #ff007f !important;
-  box-shadow: inset 5px 0 15px rgba(0, 245, 255, 0.05) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.32) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+}
+
+body.liquid-crystal-theme .sidebar-nav .nav-item.active svg {
+  stroke: #ffffff !important;
 }
 
 body.liquid-crystal-theme .sidebar-nav .nav-item.active a {
-  color: #00f5ff !important;
-  text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+  color: #ffffff !important;
 }
 
+/* CTA Buttons — bright white block with black text */
 body.liquid-crystal-theme .btn-action,
 body.liquid-crystal-theme .btn-submit,
 body.liquid-crystal-theme .btn-drawer-submit {
-  background: linear-gradient(135deg, #00f5ff 0%, #ff007f 50%, #a855f7 100%) !important;
-  color: #ffffff !important;
+  background: #ffffff !important;
+  color: #000000 !important;
   border: none !important;
-  box-shadow: 0 4px 20px rgba(0, 245, 255, 0.35) !important;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.25) !important;
 }
 
 body.liquid-crystal-theme .btn-action:hover,
 body.liquid-crystal-theme .btn-submit:hover,
 body.liquid-crystal-theme .btn-drawer-submit:hover {
-  box-shadow: 0 6px 25px rgba(255, 0, 127, 0.6) !important;
-  opacity: 0.95;
+  box-shadow: 0 6px 28px rgba(255, 255, 255, 0.4) !important;
+  background: #f3f4f6 !important;
+  opacity: 1 !important;
 }
 
+/* Background grid uses violet tint */
 body.liquid-crystal-theme .bg-grid {
   background-image: 
-    linear-gradient(rgba(0, 245, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 245, 255, 0.03) 1px, transparent 1px) !important;
+    linear-gradient(rgba(var(--color-gold-rgb), 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--color-gold-rgb), 0.025) 1px, transparent 1px) !important;
 }
 
 body.liquid-crystal-theme .bg-radial {
-  background: radial-gradient(circle at 50% 50%, rgba(5, 11, 22, 0) 0%, #02050f 100%) !important;
+  background: radial-gradient(circle at 50% 50%, transparent 0%, #07080a 100%) !important;
 }
 
-/* Liquid crystal custom headers & text glow */
+/* Headings — crystal violet color */
 body.liquid-crystal-theme h1,
 body.liquid-crystal-theme h2,
 body.liquid-crystal-theme h3 {
-  color: #00f5ff !important;
-  text-shadow: 0 0 12px rgba(0, 245, 255, 0.45);
-  font-family: var(--font-heading);
+  color: var(--color-text-primary) !important;
+  font-family: var(--font-display);
+  text-shadow: none;
 }
 
 body.liquid-crystal-theme .logo-highlight {
-  color: #ff007f !important;
-  text-shadow: 0 0 12px rgba(255, 0, 127, 0.45);
+  color: var(--color-indigo) !important;
 }
 
-/* Specific component overrides for complete liquid crystal coverage */
+/* Kanban cards */
 body.liquid-crystal-theme .kanban-card {
-  background: rgba(8, 18, 38, 0.3) !important;
-  border: 1px solid rgba(0, 245, 255, 0.16) !important;
-  box-shadow: 0 4px 16px 0 rgba(0, 245, 255, 0.03) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: var(--glass-shadow) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
 }
 
 body.liquid-crystal-theme .kanban-card:hover {
-  border-color: rgba(255, 0, 127, 0.45) !important;
-  background: rgba(12, 28, 59, 0.4) !important;
-  box-shadow: 0 6px 20px 0 rgba(255, 0, 127, 0.1) !important;
+  border-color: var(--glass-border-gold) !important;
+  background: var(--glass-bg-hover) !important;
+  box-shadow: var(--glass-shadow-hover) !important;
 }
 
+/* Filter tabs */
 body.liquid-crystal-theme .filter-tab.active {
-  background: rgba(0, 245, 255, 0.1) !important;
-  border-color: rgba(0, 245, 255, 0.35) !important;
-  color: #00f5ff !important;
-  text-shadow: 0 0 8px rgba(0, 245, 255, 0.4);
+  background: rgba(var(--color-gold-rgb), 0.12) !important;
+  border-color: rgba(var(--color-gold-rgb), 0.38) !important;
+  color: var(--color-gold) !important;
 }
 
+/* Job meta pills */
 body.liquid-crystal-theme .job-meta-pill {
-  background: rgba(0, 245, 255, 0.08) !important;
-  border: 1px solid rgba(0, 245, 255, 0.22) !important;
-  color: #00f5ff !important;
+  background: rgba(var(--color-gold-rgb), 0.08) !important;
+  border: 1px solid rgba(var(--color-gold-rgb), 0.22) !important;
+  color: var(--color-gold-light) !important;
 }
 
 body.liquid-crystal-theme .author-tag {
-  border-color: rgba(0, 245, 255, 0.4) !important;
-  color: #00f5ff !important;
+  border-color: rgba(var(--color-gold-rgb), 0.35) !important;
+  color: var(--color-gold-light) !important;
 }
 
 body.liquid-crystal-theme .table-btn-action:hover {
-  color: #00f5ff !important;
-  background: rgba(0, 245, 255, 0.1) !important;
+  color: var(--color-gold) !important;
+  background: rgba(var(--color-gold-rgb), 0.10) !important;
 }
 
 body.liquid-crystal-theme .panel-preview {
-  background: rgba(8, 18, 38, 0.2) !important;
-  border: 1px solid rgba(0, 245, 255, 0.1) !important;
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
 }
 
 body.liquid-crystal-theme .spotlight-item:hover,
 body.liquid-crystal-theme .spotlight-item.selected {
-  background: rgba(0, 245, 255, 0.1) !important;
-  color: #00f5ff !important;
+  background: rgba(var(--color-gold-rgb), 0.10) !important;
+  color: var(--color-gold) !important;
 }
 
 body.liquid-crystal-theme .spotlight-item:hover svg,
 body.liquid-crystal-theme .spotlight-item.selected svg {
-  stroke: #00f5ff !important;
+  stroke: var(--color-gold) !important;
 }
 
 body.liquid-crystal-theme .sliding-pill {
   box-shadow: 
     0 4px 16px rgba(0, 0, 0, 0.25), 
-    inset 0 1px 1px rgba(255, 255, 255, 0.08),
-    0 0 12px rgba(0, 245, 255, 0.2) !important;
+    inset 0 1px 1px rgba(255, 255, 255, 0.10),
+    0 0 16px rgba(var(--color-gold-rgb), 0.25) !important;
 }
 
-/* Custom Scrollbar for Liquid Crystal Theme */
+/* Scrollbar */
 body.liquid-crystal-theme ::-webkit-scrollbar-thumb {
-  background: rgba(0, 245, 255, 0.3) !important;
+  background: rgba(var(--color-gold-rgb), 0.25) !important;
   border-radius: 4px;
 }
 
 body.liquid-crystal-theme ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 0, 127, 0.5) !important;
+  background: var(--color-gold) !important;
 }
 
 /* ============================================================
@@ -5520,39 +5610,39 @@ body.liquid-crystal-theme ::-webkit-scrollbar-thumb:hover {
    LIQUID CRYSTAL THEME OVERRIDES FOR SOURCING
    ============================================================ */
 body.liquid-crystal-theme .sourcing-breadcrumb .crumb.active {
-  color: #00f5ff !important;
+  color: var(--color-gold) !important;
 }
 body.liquid-crystal-theme .sourcing-selector-card.active {
-  border-color: rgba(255, 0, 127, 0.5) !important;
-  background: rgba(12, 28, 59, 0.4) !important;
+  border-color: rgba(var(--color-gold-rgb), 0.45) !important;
+  background: rgba(var(--color-gold-rgb), 0.05) !important;
 }
 body.liquid-crystal-theme .sourcing-selector-card .active-dot {
-  background: #ff007f !important;
-  box-shadow: 0 0 8px rgba(255, 0, 127, 0.6) !important;
+  background: var(--color-gold) !important;
+  box-shadow: 0 0 8px rgba(var(--color-gold-rgb), 0.5) !important;
 }
 body.liquid-crystal-theme .drag-drop-zone:hover,
 body.liquid-crystal-theme .drag-drop-zone.dragging {
-  border-color: rgba(0, 245, 255, 0.4) !important;
-  background: rgba(12, 28, 59, 0.2) !important;
+  border-color: rgba(var(--color-gold-rgb), 0.40) !important;
+  background: rgba(var(--color-gold-rgb), 0.04) !important;
 }
 body.liquid-crystal-theme .link-anchor {
-  color: #00f5ff !important;
+  color: var(--color-gold) !important;
 }
 body.liquid-crystal-theme .progress-bar-fill {
-  background: linear-gradient(135deg, #00f5ff 0%, #ff007f 50%, #a855f7 100%) !important;
+  background: var(--gradient-brand) !important;
 }
 body.liquid-crystal-theme .upgrade-prompt-box {
-  background: rgba(0, 245, 255, 0.05) !important;
-  border-color: rgba(0, 245, 255, 0.2) !important;
-  color: #00f5ff !important;
+  background: rgba(var(--color-gold-rgb), 0.04) !important;
+  border-color: rgba(var(--color-gold-rgb), 0.18) !important;
+  color: var(--color-gold) !important;
 }
 body.liquid-crystal-theme .scheduler-card .step-num {
-  background: rgba(0, 245, 255, 0.08) !important;
-  border-color: rgba(0, 245, 255, 0.25) !important;
-  color: #00f5ff !important;
+  background: rgba(var(--color-gold-rgb), 0.08) !important;
+  border-color: rgba(var(--color-gold-rgb), 0.25) !important;
+  color: var(--color-gold) !important;
 }
 body.liquid-crystal-theme .sourcing-tab-btn.active {
-  border-bottom-color: #00f5ff !important;
+  border-bottom-color: var(--color-gold) !important;
 }
 
 
@@ -5789,30 +5879,79 @@ body.liquid-crystal-theme .sourcing-tab-btn.active {
    LIQUID CRYSTAL THEME OVERRIDES FOR CREATE JOB
    ============================================================ */
 body.liquid-crystal-theme .avya-req-banner {
-  background: rgba(0, 245, 255, 0.02) !important;
-  border-color: rgba(0, 245, 255, 0.2) !important;
+  background: rgba(var(--color-gold-rgb), 0.03) !important;
+  border-color: rgba(var(--color-gold-rgb), 0.18) !important;
 }
 body.liquid-crystal-theme .avya-spark-circle {
-  background: rgba(0, 245, 255, 0.08) !important;
-  border-color: rgba(0, 245, 255, 0.25) !important;
-  color: #00f5ff !important;
+  background: rgba(var(--color-gold-rgb), 0.08) !important;
+  border-color: rgba(var(--color-gold-rgb), 0.25) !important;
+  color: var(--color-gold) !important;
 }
 body.liquid-crystal-theme .duration-tag {
-  background: rgba(255, 0, 127, 0.15) !important;
-  color: #ff007f !important;
-  border-color: rgba(255, 0, 127, 0.25) !important;
+  background: rgba(var(--color-indigo-rgb), 0.12) !important;
+  color: var(--color-indigo-light) !important;
+  border-color: rgba(var(--color-indigo-rgb), 0.22) !important;
 }
 body.liquid-crystal-theme .no-file-link {
-  color: #00f5ff !important;
+  color: var(--color-gold) !important;
 }
 body.liquid-crystal-theme .prompt-space-box {
-  border-color: rgba(0, 245, 255, 0.1) !important;
+  border-color: rgba(var(--color-gold-rgb), 0.10) !important;
 }
 body.liquid-crystal-theme .prompt-input-row textarea {
-  border-color: rgba(0, 245, 255, 0.15) !important;
+  border-color: rgba(var(--color-gold-rgb), 0.12) !important;
 }
 body.liquid-crystal-theme .seed-stages-box {
-  border-color: rgba(0, 245, 255, 0.1) !important;
+  border-color: rgba(var(--color-gold-rgb), 0.10) !important;
+}
+
+/* ============================================================
+   INTERACTIVE 3D GLASS SHINE EFFECT OVERLAYS
+   ============================================================ */
+.job-card::after, 
+.card-metric::after, 
+.panel-setting::after, 
+.agent-card::after, 
+.terminal-box::after, 
+.table-card::after,
+.panel-preview::after,
+.sourcing-tab-card::after,
+.glass-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle 220px at var(--shine-x, 50%) var(--shine-y, 50%), rgba(255, 255, 255, 0.05), transparent 75%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: 1;
+}
+
+.job-card:hover::after, 
+.card-metric:hover::after, 
+.panel-setting:hover::after, 
+.agent-card:hover::after, 
+.terminal-box:hover::after, 
+.table-card:hover::after,
+.panel-preview:hover::after,
+.sourcing-tab-card:hover::after,
+.glass-card:hover::after {
+  opacity: 1;
+}
+
+/* Ensure perspective for card 3D tilt */
+.job-card, 
+.card-metric, 
+.panel-setting, 
+.agent-card, 
+.terminal-box, 
+.table-card,
+.panel-preview,
+.sourcing-tab-card,
+.glass-card {
+  transform-style: preserve-3d;
+  will-change: transform;
 }
 
 

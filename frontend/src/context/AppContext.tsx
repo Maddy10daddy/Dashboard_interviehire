@@ -92,8 +92,15 @@ interface AppContextType {
   addApplicantsBulk: (jobId: string, applicants: Omit<Candidate, 'id' | 'jobApplied' | 'score' | 'registeredOn'>[]) => Promise<void>;
   uploadResumes: (jobId: string, files: File[]) => Promise<void>;
   advanceCandidate: (candidateId: string) => Promise<void>;
+  rejectCandidate: (candidateId: string) => Promise<void>;
   recalculateJobPipelines: () => void;
   wsNotification: string | null;
+  isAuthenticated: boolean;
+  isAuthLoading: boolean;
+  isDataLoading: boolean;
+  currentUser: any;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -152,6 +159,8 @@ const mapBackendCandidate = (c: any, jobsList: Job[]): Candidate => {
     scoreVal = `${Math.round(c.functional_score)}%`;
   } else if (c.screening_score !== null && c.screening_score !== undefined) {
     scoreVal = `${Math.round(c.screening_score)}%`;
+  } else if (c.resume_score !== null && c.resume_score !== undefined) {
+    scoreVal = `${Math.round(c.resume_score)}%`;
   }
 
   return {
@@ -162,12 +171,13 @@ const mapBackendCandidate = (c: any, jobsList: Job[]): Candidate => {
     jobApplied: jobName,
     status,
     score: scoreVal,
-    registeredOn: c.created_at ? new Date(c.created_at).toLocaleDateString('en-US', {
+    registeredOn: c.created_at ? new Date(c.created_at).toLocaleString('en-US', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+      hour12: true
     }) : '04 Mar 2026, 10:15 AM',
   };
 };
@@ -198,6 +208,52 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [reportCandidateId, setReportCandidateId] = useState<string | null>(null);
   const [wsNotification, setWsNotification] = useState<string | null>(null);
 
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('interviehire_user');
+    if (storedUser) {
+      setCurrentUser(JSON.parse(storedUser));
+      setIsAuthenticated(true);
+    }
+    setIsAuthLoading(false);
+  }, []);
+
+  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_URL}/api/team/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.user) {
+          localStorage.setItem('interviehire_user', JSON.stringify(data.user));
+          setCurrentUser(data.user);
+          setIsAuthenticated(true);
+          return true;
+        }
+      } else {
+        const errData = await res.json();
+        throw new Error(errData.detail || 'Login failed');
+      }
+      return false;
+    } catch (err: any) {
+      console.error('Login error:', err);
+      throw err;
+    }
+  }, []);
+
+  const logout = useCallback(() => {
+    localStorage.removeItem('interviehire_user');
+    setCurrentUser(null);
+    setIsAuthenticated(false);
+  }, []);
+
   const openDrawer = useCallback((type: DrawerType) => setActiveDrawer(type), []);
   const closeDrawer = useCallback(() => {
     setActiveDrawer(null);
@@ -211,6 +267,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Fetch data function
   const fetchData = useCallback(async () => {
+    setIsDataLoading(true);
     try {
       const jobsRes = await fetch(`${API_URL}/api/jobs`);
       if (!jobsRes.ok) throw new Error('Failed to fetch jobs');
@@ -231,12 +288,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setTeam(mappedTeam);
     } catch (err) {
       console.error('Error fetching backend data:', err);
+    } finally {
+      setIsDataLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (isAuthenticated) {
+      fetchData();
+    }
+  }, [fetchData, isAuthenticated]);
 
   // WebSocket connection & candidate update listener
   const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws';
@@ -457,7 +518,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       patchData.functional_status = 'completed';
       patchData.functional_score = 90.0;
     } else if (c.status === 'Functional') {
-      return;
+      patchData.functional_status = 'completed';
     }
 
     try {
@@ -474,6 +535,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [candidates, fetchData]);
 
+  const rejectCandidate = useCallback(async (candidateId: string) => {
+    try {
+      const res = await fetch(`${API_URL}/api/jobs/applicants/${candidateId}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) throw new Error('Failed to reject candidate');
+      
+      fetchData();
+    } catch (err) {
+      console.error('Error rejecting candidate:', err);
+    }
+  }, [fetchData]);
+
   const recalculateJobPipelines = useCallback(() => {
     fetchData();
   }, [fetchData]);
@@ -488,8 +562,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         activeDrawer, openDrawer, closeDrawer,
         spotlightOpen, setSpotlightOpen,
         reportCandidateId, openReport,
-        addJob, updateJobParameters, addTeamMember, removeTeamMember, addApplicant, addApplicantsBulk, uploadResumes, advanceCandidate, recalculateJobPipelines,
-        wsNotification
+        addJob, updateJobParameters, addTeamMember, removeTeamMember, addApplicant, addApplicantsBulk, uploadResumes, advanceCandidate, rejectCandidate, recalculateJobPipelines,
+        wsNotification,
+        isAuthenticated, isAuthLoading, isDataLoading, currentUser, login, logout
       }}
     >
       {children}

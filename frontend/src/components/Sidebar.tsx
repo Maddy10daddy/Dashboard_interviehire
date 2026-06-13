@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import { useAppContext } from '@/context/AppContext';
 import {
   Briefcase,
   BarChart3,
@@ -28,9 +29,11 @@ const SETTINGS_ITEMS = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [settingsOpen, setSettingsOpen] = useState(pathname.startsWith('/settings'));
+  const { logout, currentUser } = useAppContext();
+  const [settingsOpen, setSettingsOpen] = useState(pathname ? pathname.startsWith('/settings') : false);
 
   const isActive = (href: string) => {
+    if (!pathname) return false;
     if (href === '/jobs') return pathname === '/jobs' || pathname.startsWith('/jobs/');
     return pathname.startsWith(href);
   };
@@ -103,12 +106,12 @@ export default function Sidebar() {
 
         {/* User Profile */}
         <div className="user-profile">
-          <div className="user-avatar">D</div>
+          <div className="user-avatar">{currentUser ? currentUser.name[0].toUpperCase() : 'D'}</div>
           <div className="user-info">
-            <div className="user-name">Devasri</div>
-            <div className="user-role">Org. Admin</div>
+            <div className="user-name">{currentUser ? currentUser.name : 'Devasri'}</div>
+            <div className="user-role">{currentUser ? (currentUser.user_type === 'org_admin' ? 'Org. Admin' : 'Collaborator') : 'Org. Admin'}</div>
           </div>
-          <button className="btn-logout" aria-label="Logout">
+          <button className="btn-logout" aria-label="Logout" onClick={logout}>
             <LogOut size={16} strokeWidth={1.8} />
           </button>
         </div>

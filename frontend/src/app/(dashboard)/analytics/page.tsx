@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { soundEngine } from '@/components/SoundEngine';
 import {
@@ -14,41 +14,58 @@ import {
   Eye,
 } from 'lucide-react';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 export default function AnalyticsPage() {
-  const { jobs, candidates, openReport } = useAppContext();
+  const { jobs, candidates, openReport, advanceCandidate, rejectCandidate } = useAppContext();
   const [subtab, setSubtab] = useState<'jobs-data' | 'candidates-data'>('jobs-data');
   const [searchQuery, setSearchQuery] = useState('');
   const [limit, setLimit] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Live usage stats from API
+  const [stats, setStats] = useState<any>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
+
   // Sorting state for jobs table
   const [jobsSortKey, setJobsSortKey] = useState<'id' | 'role' | 'card'>('id');
   const [jobsSortAsc, setJobsSortAsc] = useState(true);
 
-  // 1. Calculate Summary Metrics
-  const summary = useMemo(() => {
-    let totalApplicants = 0;
-    let resumeCount = 0;
-    let screeningCount = 0;
-    let functionalCount = 0;
+  const [mounted, setMounted] = useState(false);
 
-    jobs.forEach((job) => {
-      totalApplicants += job.pipeline.total || 0;
-      resumeCount += job.pipeline.resume || 0;
-      screeningCount += job.pipeline.screening || 0;
-      functionalCount += job.pipeline.functional || 0;
-    });
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-    return {
-      totalApplicants,
-      resumeCount,
-      screeningCount,
-      functionalCount,
+  // 1. Fetch live metrics from stats endpoint
+  useEffect(() => {
+    const fetchStats = async () => {
+      setIsLoadingStats(true);
+      try {
+        const res = await fetch(`${API_URL}/api/usage/stats`);
+        if (res.ok) {
+          const data = await res.json();
+          setStats(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch stats:', err);
+      } finally {
+        setIsLoadingStats(false);
+      }
     };
-  }, [jobs]);
+    fetchStats();
+  }, [jobs, candidates]);
+
+  // Client-side fallback metrics calculation
+  const summary = {
+    totalApplicants: jobs.reduce((acc, job) => acc + (job.pipeline?.total || 0), 0),
+    resumeCount: jobs.reduce((acc, job) => acc + (job.pipeline?.resume || 0), 0),
+    screeningCount: jobs.reduce((acc, job) => acc + (job.pipeline?.screening || 0), 0),
+    functionalCount: jobs.reduce((acc, job) => acc + (job.pipeline?.functional || 0), 0),
+  };
 
   // 2. Filter & Sort Jobs Table
-  const filteredJobs = useMemo(() => {
+  const filteredJobs = (() => {
     let list = [...jobs];
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -74,10 +91,10 @@ export default function AnalyticsPage() {
     });
 
     return list;
-  }, [jobs, searchQuery, jobsSortKey, jobsSortAsc]);
+  })();
 
   // 3. Filter Candidates Table
-  const filteredCandidates = useMemo(() => {
+  const filteredCandidates = (() => {
     let list = [...candidates];
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -89,7 +106,24 @@ export default function AnalyticsPage() {
       );
     }
     return list;
-  }, [candidates, searchQuery]);
+  })();
+
+  // Helper to format Candidate ID from UUID to match screenshot CAN-XXXX-XX
+  const formatCandidateId = (c: any) => {
+    if (!c.id) return 'CAN-0000-XX';
+    const cleanId = c.id.replace(/-/g, '').toUpperCase();
+    return `CAN-${cleanId.substring(0, 4)}-${cleanId.substring(cleanId.length - 3)}`;
+  };
+
+  // Helper for match score text styling
+  const getScoreStyle = (scoreStr: string) => {
+    if (!scoreStr || scoreStr === '0%' || scoreStr === '—') return { color: 'var(--color-text-faint)' };
+    const num = parseInt(scoreStr);
+    if (isNaN(num)) return { color: 'var(--color-text-faint)' };
+    if (num >= 75) return { color: '#34d099', fontWeight: 700 };
+    if (num >= 50) return { color: 'var(--color-warning)', fontWeight: 700 };
+    return { color: '#ef4444', fontWeight: 700 };
+  };
 
   // Handle column config placeholder click
   const handleColumnConfig = () => {
@@ -144,6 +178,10 @@ export default function AnalyticsPage() {
     setCurrentPage(1);
   };
 
+  if (!mounted) {
+    return <div style={{ opacity: 0, minHeight: '100vh' }} />;
+  }
+
   return (
     <section className="dashboard-view active-view" id="view-analytics">
       {/* Metrics Row */}
@@ -156,21 +194,21 @@ export default function AnalyticsPage() {
             </div>
             <span className="metric-title">Total Applicants</span>
             <span className="metric-val" id="stat-total-applicants">
-              {summary.totalApplicants}
+              {stats ? stats.total_applicants : summary.totalApplicants}
             </span>
           </div>
           <div className="metric-pills">
             <div className="m-pill">
-              Career Page <span className="v">0</span>
+              Career Page <span className="v">{stats ? stats.career_page : 0}</span>
             </div>
             <div className="m-pill">
-              Bulk Upload <span className="v">0</span>
+              Bulk Upload <span className="v">{stats ? stats.bulk_upload : 0}</span>
             </div>
             <div className="m-pill">
-              Scheduled <span className="v">{summary.screeningCount}</span>
+              Scheduled <span className="v">{stats ? stats.scheduled : 0}</span>
             </div>
             <div className="m-pill">
-              Direct Link <span className="v">{summary.totalApplicants - summary.screeningCount}</span>
+              Direct Link <span className="v">{stats ? stats.direct_link : 0}</span>
             </div>
           </div>
         </div>
@@ -183,18 +221,18 @@ export default function AnalyticsPage() {
             </div>
             <span className="metric-title">Resume Analysis</span>
             <span className="metric-val" id="stat-resume-analysis">
-              {summary.resumeCount}
+              {stats ? stats.resume_analysed : summary.resumeCount}
             </span>
           </div>
           <div className="metric-pills">
             <div className="m-pill">
-              Analysed <span className="v">{summary.resumeCount}</span>
+              Analysed <span className="v">{stats ? stats.resume_analysed : 0}</span>
             </div>
             <div className="m-pill">
-              Shortlisted <span className="v">0</span>
+              Shortlisted <span className="v">{stats ? stats.resume_shortlisted : 0}</span>
             </div>
             <div className="m-pill">
-              Waitlisted <span className="v">0</span>
+              Waitlisted <span className="v">{stats ? stats.resume_waitlisted : 0}</span>
             </div>
           </div>
         </div>
@@ -207,21 +245,21 @@ export default function AnalyticsPage() {
             </div>
             <span className="metric-title">Recruiter Screening</span>
             <span className="metric-val" id="stat-recruiter-screening">
-              {summary.screeningCount}
+              {stats ? stats.screening_attempted : summary.screeningCount}
             </span>
           </div>
           <div className="metric-pills">
             <div className="m-pill">
-              Attempted <span className="v">{summary.screeningCount > 0 ? summary.screeningCount - 1 : 0}</span>
+              Attempted <span className="v">{stats ? stats.screening_attempted : 0}</span>
             </div>
             <div className="m-pill">
-              Scheduled <span className="v">{summary.screeningCount > 0 ? 1 : 0}</span>
+              Scheduled <span className="v">{stats ? stats.screening_scheduled : 0}</span>
             </div>
             <div className="m-pill">
-              Shortlisted <span className="v">0</span>
+              Shortlisted <span className="v">{stats ? stats.screening_shortlisted : 0}</span>
             </div>
             <div className="m-pill">
-              Waitlisted <span className="v">0</span>
+              Waitlisted <span className="v">{stats ? stats.screening_waitlisted : 0}</span>
             </div>
           </div>
         </div>
@@ -234,21 +272,21 @@ export default function AnalyticsPage() {
             </div>
             <span className="metric-title">Functional Interview</span>
             <span className="metric-val" id="stat-functional-interview">
-              {summary.functionalCount}
+              {stats ? stats.functional_attempted : summary.functionalCount}
             </span>
           </div>
           <div className="metric-pills">
             <div className="m-pill">
-              Attempted <span className="v">{summary.functionalCount > 0 ? summary.functionalCount - 1 : 0}</span>
+              Attempted <span className="v">{stats ? stats.functional_attempted : 0}</span>
             </div>
             <div className="m-pill">
-              Scheduled <span className="v">{summary.functionalCount > 0 ? 1 : 0}</span>
+              Scheduled <span className="v">{stats ? stats.functional_scheduled : 0}</span>
             </div>
             <div className="m-pill">
-              Shortlisted <span className="v">0</span>
+              Shortlisted <span className="v">{stats ? stats.functional_shortlisted : 0}</span>
             </div>
             <div className="m-pill">
-              Waitlisted <span className="v">0</span>
+              Waitlisted <span className="v">{stats ? stats.functional_waitlisted : 0}</span>
             </div>
           </div>
         </div>
@@ -381,14 +419,16 @@ export default function AnalyticsPage() {
                 ) : (
                   filteredCandidates.map((c) => (
                     <tr key={c.id}>
-                      <td className="cell-mono">{c.id}</td>
+                      <td className="cell-mono">{formatCandidateId(c)}</td>
                       <td>
                         <div className="user-cell">
                           <div className="user-avatar-mini">
                             {c.name
                               .split(' ')
                               .map((n) => n[0])
-                              .join('')}
+                              .join('')
+                              .substring(0, 2)
+                              .toUpperCase()}
                           </div>
                           <div className="user-details">
                             <span style={{ fontWeight: 600 }}>{c.name}</span>
@@ -405,7 +445,7 @@ export default function AnalyticsPage() {
                               ? 'recruiter'
                               : c.status === 'Functional'
                               ? 'interviewer'
-                              : ''
+                              : 'resume'
                           }`}
                         >
                           <span className="badge-role-icon"></span>
@@ -413,27 +453,63 @@ export default function AnalyticsPage() {
                         </span>
                       </td>
                       <td>
-                        <strong
-                          style={{
-                            color: 'var(--color-gold)',
-                            textShadow: '0 0 8px var(--color-gold-glow)',
-                            fontFamily: 'var(--font-mono)',
-                          }}
-                        >
-                          {c.score}
+                        <strong style={getScoreStyle(c.score)}>
+                          {(!c.score || c.score === '0%') ? '—' : c.score}
                         </strong>
                       </td>
                       <td>
-                        <button
-                          className="table-btn-action"
-                          title="View Full Vetting Report"
-                          onClick={() => {
-                            soundEngine.playClick();
-                            openReport(c.id);
-                          }}
-                        >
-                          <Eye size={16} />
-                        </button>
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                          <button
+                            className="table-btn-action"
+                            title="View Full Vetting Report"
+                            onClick={() => {
+                              soundEngine.playClick();
+                              openReport(c.id);
+                            }}
+                          >
+                            <Eye size={16} />
+                          </button>
+                          
+                          <button
+                            onClick={() => {
+                              soundEngine.playClick();
+                              advanceCandidate(c.id);
+                            }}
+                            style={{
+                              background: 'rgba(59, 130, 246, 0.15)',
+                              border: '1px solid rgba(59, 130, 246, 0.3)',
+                              color: '#60a5fa',
+                              borderRadius: 4,
+                              padding: '3px 8px',
+                              fontSize: '0.72rem',
+                              fontWeight: 600,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Advance
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              soundEngine.playClick();
+                              if (confirm(`Are you sure you want to reject ${c.name}?`)) {
+                                rejectCandidate(c.id);
+                              }
+                            }}
+                            style={{
+                              background: 'rgba(239, 68, 68, 0.15)',
+                              border: '1px solid rgba(239, 68, 68, 0.3)',
+                              color: '#f87171',
+                              borderRadius: 4,
+                              padding: '3px 8px',
+                              fontSize: '0.72rem',
+                              fontWeight: 600,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Reject
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))

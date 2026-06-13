@@ -18,8 +18,8 @@ export function useWebSocket({
   const [messages, setMessages] = useState<WSMessage[]>([]);
   const ws = useRef<WebSocket | null>(null);
   const reconnectAttempt = useRef(0);
-  const reconnectTimer = useRef<NodeJS.Timeout>();
-  const pingTimer = useRef<NodeJS.Timeout>();
+  const reconnectTimer = useRef<NodeJS.Timeout | undefined>(undefined);
+  const pingTimer = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const onMessageRef = useRef(onMessage);
   useEffect(() => {

@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+import hashlib
 from app.database import get_db
 from app.models.user import User, UserStatus
-from app.schemas import TeamListOut, UserOut, InviteMemberIn
+from app.schemas import TeamListOut, UserOut, InviteMemberIn, LoginIn, LoginOut
 
 router = APIRouter()
 
@@ -46,3 +47,34 @@ def remove_member(user_id: str, db: Session = Depends(get_db)):
     db.delete(user)
     db.commit()
     return {"message": "Member removed"}
+
+
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode('utf-8')).hexdigest()
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return hash_password(plain_password) == hashed_password
+
+
+@router.post("/login", response_model=LoginOut)
+def login(data: LoginIn, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == data.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.hashed_password is None:
+        if data.password == "admin123":
+            # Set the password for subsequent logins
+            user.hashed_password = hash_password(data.password)
+            user.status = UserStatus.active
+            db.commit()
+            db.refresh(user)
+            return LoginOut(success=True, message="Login successful, password set", user=user)
+        else:
+            raise HTTPException(status_code=400, detail="Invalid password (use default dev password 'admin123' for first login)")
+            
+    if not verify_password(data.password, user.hashed_password):
+        raise HTTPException(status_code=400, detail="Invalid password")
+        
+    return LoginOut(success=True, message="Login successful", user=user)

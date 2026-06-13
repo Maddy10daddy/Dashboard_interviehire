@@ -205,11 +205,31 @@ export default function CreateJobPage() {
     }
   };
 
-  // Skip upload and populate a default template
+  // Skip upload and start with empty form states (zero default values)
   const handleNoFileClick = () => {
-    const dummyFile = new File(['Dummy Job Description content for React Senior Developer'], 'Senior_React_Developer.pdf', { type: 'application/pdf' });
-    setSelectedFile(dummyFile);
-    runExtraction(dummyFile);
+    setSelectedFile(null);
+    setRoleName('');
+    setCardName('');
+    setExperienceBand('3-6 Years');
+    setCustomJobId('');
+    setDescription('');
+    setSkills('');
+    setScreeningQuestions([]);
+    setFunctionalQuestions([]);
+    setResumeParameters({
+      must_have: [],
+      red_flags: [],
+      good_to_have: []
+    });
+    setScreeningParameters({
+      experience: [],
+      location: [],
+      compensation: []
+    });
+    setFunctionalParameters({
+      topics: []
+    });
+    setStep('edit');
   };
 
   // Final job submission

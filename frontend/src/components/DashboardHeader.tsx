@@ -60,10 +60,12 @@ const HEADER_CONFIG: Record<string, {
 export default function DashboardHeader() {
   const pathname = usePathname();
   const router = useRouter();
-  const { globalSearch, setGlobalSearch, openDrawer } = useAppContext();
+  const { jobs, globalSearch, setGlobalSearch, openDrawer } = useAppContext();
   const [isLight, setIsLight] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const saved = localStorage.getItem('interviehire-theme');
     const prefersLight = window.matchMedia?.('(prefers-color-scheme: light)').matches;
     if (saved === 'light' || (!saved && prefersLight)) {
@@ -100,16 +102,28 @@ export default function DashboardHeader() {
     soundEngine.playChime([261.63, 329.63, 392.00, 523.25], 0.15, 0.08);
   };
 
-  // Find matching config (handle dynamic routes like /jobs/[id])
-  let config = HEADER_CONFIG[pathname];
+  // Find matching config (handle dynamic routes like /jobs/[id] and /jobs/[id]/sourcing)
+  let config = pathname ? HEADER_CONFIG[pathname] : null;
   if (!config) {
-    // Check if it's a job detail page
-    if (pathname.startsWith('/jobs/')) {
-      config = {
-        breadcrumb: 'Jobs',
-        title: 'Job Detail',
-        subtitle: 'View candidate responses and funnel metrics',
-      };
+    if (pathname && pathname.startsWith('/jobs/')) {
+      const parts = pathname.split('/');
+      const jobId = parts[2];
+      const job = jobs.find(j => j.id === jobId);
+      const isSourcing = parts[3] === 'sourcing';
+
+      if (isSourcing) {
+        config = {
+          breadcrumb: 'Sourcing',
+          title: job ? `Source Applicants • ${job.roleName}` : 'Source Applicants',
+          subtitle: job ? `Sourcing channel selection for ${job.roleName} (ID: ${job.customJobId})` : 'Choose integration, CSV upload, or manual sourcing',
+        };
+      } else {
+        config = {
+          breadcrumb: 'Jobs',
+          title: job ? job.cardName : 'Job Detail',
+          subtitle: job ? `Role: ${job.roleName} • ID: ${job.customJobId} • ${job.experienceBand} • Created by ${job.createdBy}` : 'View candidate responses and funnel metrics',
+        };
+      }
     } else {
       config = {
         breadcrumb: 'Dashboard',
@@ -126,14 +140,14 @@ export default function DashboardHeader() {
           <span className="breadcrumb-item">Client Portal</span>
           <span className="breadcrumb-separator">/</span>
           <span className="breadcrumb-item active" id="breadcrumb-title">
-            {config.breadcrumb}
+            {mounted ? config.breadcrumb : 'Dashboard'}
           </span>
         </div>
         <h1 className="header-heading" id="header-main-title">
-          {config.title}
+          {mounted ? config.title : 'Dashboard'}
         </h1>
         <p className="header-subheading" id="header-sub-text">
-          {config.subtitle}
+          {mounted ? config.subtitle : ''}
         </p>
       </div>
 
@@ -169,19 +183,18 @@ export default function DashboardHeader() {
         <button
           className="btn-theme-toggle"
           style={{
-            borderColor: isCrystal ? 'rgba(0, 245, 255, 0.4)' : 'rgba(255, 255, 255, 0.08)',
-            color: isCrystal ? '#00f5ff' : 'var(--color-text-normal)',
+            borderColor: isCrystal ? 'rgba(139, 92, 246, 0.5)' : 'rgba(255, 255, 255, 0.08)',
+            color: isCrystal ? 'oklch(58% 0.22 286)' : 'var(--color-text-muted)',
             marginRight: '8px',
-            textShadow: isCrystal ? '0 0 8px rgba(0, 245, 255, 0.6)' : 'none',
           }}
-          title="Toggle Liquid Crystal Theme"
+          title="Toggle Crystal Glass Theme"
           onClick={toggleCrystal}
         >
-          <Sparkles size={16} style={{ transform: isCrystal ? 'rotate(15deg)' : 'none' }} />
+          <Sparkles size={16} style={{ transform: isCrystal ? 'rotate(15deg) scale(1.1)' : 'none', transition: 'transform 0.3s ease' }} />
         </button>
 
         {/* Contextual action button */}
-        {config.actionLabel && (
+        {mounted && config.actionLabel && (
           <button
             className="btn-action"
             id="header-action-btn"

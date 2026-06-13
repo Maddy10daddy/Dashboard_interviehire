@@ -261,3 +261,15 @@ class FunnelStage(BaseModel):
 class FunnelOut(BaseModel):
     stages: List[FunnelStage]
     score_distribution: dict   # {"0-20": 0, "20-40": 5, "40-60": 10, "60-80": 8, "80-100": 2}
+
+
+# ─── AUTHENTICATION ──────────────────────────────────────────────────────────
+
+class LoginIn(BaseModel):
+    email: EmailStr
+    password: str
+
+class LoginOut(BaseModel):
+    success: bool
+    message: str
+    user: Optional[UserOut] = None
