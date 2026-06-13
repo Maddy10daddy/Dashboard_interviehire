@@ -20,21 +20,6 @@ with engine.connect() as conn:
     conn.execute(text("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS recruiter_screening VARCHAR;"))
     conn.execute(text("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS recruiter_screening_score FLOAT;"))
     conn.execute(text("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS attempted_at TIMESTAMP;"))
-    
-    # Applicants table migrations
-    conn.execute(text("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS resume_analysed BOOLEAN DEFAULT FALSE;"))
-    conn.execute(text("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS resume_shortlisted BOOLEAN DEFAULT FALSE;"))
-    conn.execute(text("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS resume_waitlisted BOOLEAN DEFAULT FALSE;"))
-    conn.execute(text("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS resume_score FLOAT;"))
-    conn.execute(text("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS screening_status VARCHAR;"))
-    conn.execute(text("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS screening_score FLOAT;"))
-    conn.execute(text("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS screening_scheduled_at TIMESTAMP WITH TIME ZONE;"))
-    conn.execute(text("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS functional_status VARCHAR;"))
-    conn.execute(text("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS functional_score FLOAT;"))
-    conn.execute(text("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS functional_scheduled_at TIMESTAMP WITH TIME ZONE;"))
-    conn.execute(text("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS cheat_probability VARCHAR;"))
-    conn.execute(text("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS report_url VARCHAR;"))
-    conn.execute(text("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS source VARCHAR;"))
     conn.commit()
 
     # Rename / Migrate career_pages -> organisations

@@ -1559,26 +1559,3 @@ def get_applicant_resume_text(applicant_id: UUID, db: Session = Depends(get_db))
         
     return {"text": file_text}
 
-@router.delete("/applicants/{applicant_id}")
-def delete_applicant(applicant_id: UUID, db: Session = Depends(get_db)):
-    applicant = db.query(Applicant).filter(Applicant.id == applicant_id).first()
-    if not applicant:
-        raise HTTPException(status_code=404, detail="Applicant not found")
-    
-    db.delete(applicant)
-    db.commit()
-    
-    # Broadcast updates via WebSocket
-    message = OutgoingMessage(
-        type="candidate_update",
-        content=f"Candidate {applicant.name} was rejected",
-        sender="System"
-    ).model_dump_json()
-    import asyncio
-    try:
-        loop = asyncio.get_running_loop()
-        loop.create_task(manager.broadcast(message, room_id="global"))
-    except RuntimeError:
-        pass
-        
-    return {"status": "success", "message": "Applicant rejected successfully"}

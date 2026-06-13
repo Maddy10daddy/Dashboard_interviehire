@@ -80,7 +80,6 @@ def get_candidates_table(db: Session = Depends(get_db)):
             "cheat_probability": a.cheat_probability,
             "recruiter_screening": a.recruiter_screening,
             "recruiter_screening_score": a.recruiter_screening_score,
-            "resume_score": a.resume_score,
             "attempted_at": a.attempted_at.isoformat() if a.attempted_at else None,
             "created_at": a.created_at.isoformat() if a.created_at else None,
             "resume_url": a.resume_url,
